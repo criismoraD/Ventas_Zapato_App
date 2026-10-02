@@ -804,12 +804,32 @@ public class Panel_De_Chatbot extends JPanel {
         pendingImageName = null;
         pendingImageMimeType = "image/jpeg";
 
-        Timer timeoutTimer = new Timer(15000, e -> {
-            if (awaitingResponse) {
+        // Watchdog de INACTIVIDAD, no de duracion total. Las consultas de inventario/color
+        // activan Function Calling, que hace 2+ viajes secuenciales a la API (elegir
+        // herramienta -> ejecutar DAO -> redactar respuesta) con un intervalo silencioso
+        // entre medio. Un limite total de 15s abortaba consultas validas y mostraba un
+        // falso "servidor caido". Aqui solo se corta si el modelo lleva 60s sin emitir nada.
+        final boolean[] abortar = {false};
+        final int[] ultimaActividad = {(int) (System.currentTimeMillis() / 1000L)};
+        final int TIEMPO_MAX_SIN_ACTIVIDAD = 60; // segundos
+
+        // Se usa un array porque la lambda del Timer se referencia a si misma durante su
+        // propia inicializacion (comun patron en Swing para timers autoreferentes).
+        final Timer[] timerRef = new Timer[1];
+        timerRef[0] = new Timer(1000, e -> {
+            if (!awaitingResponse) {
+                timerRef[0].stop();
+                return;
+            }
+            int inactivo = (int) (System.currentTimeMillis() / 1000L) - ultimaActividad[0];
+            if (inactivo >= TIEMPO_MAX_SIN_ACTIVIDAD) {
+                timerRef[0].stop();
+                abortar[0] = true;
                 SwingUtilities.invokeLater(() -> {
                     ChatMsg msg = messages.get(placeholderIdx);
                     msg.thinking = false;
-                    msg.text = "Error: El servidor no respondió a tiempo. Revisa tu conexión a internet e inténtalo de nuevo.";
+                    msg.text = "La IA tard\u00f3 demasiado en responder y cancel\u00e9 la consulta. "
+                        + "Puede que est\u00e9 pensando o que el servidor est\u00e9 lento. Int\u00e9ntalo de nuevo.";
                     stopThinkingAnimationIfIdle();
                     awaitingResponse = false;
                     chatBody.revalidate();
@@ -818,14 +838,14 @@ public class Panel_De_Chatbot extends JPanel {
                 });
             }
         });
-        timeoutTimer.setRepeats(false);
-        timeoutTimer.start();
+        timerRef[0].setRepeats(true);
+        timerRef[0].start();
 
         geminiService.Enviar_Mensaje_Asincrono(userMsg, imgData, imageMimeType,
             chunk -> {
-                if (timeoutTimer.isRunning()) {
-                    timeoutTimer.stop();
-                }
+                // Cada fragmento reinicia el reloj: mide silencio, no duracion.
+                ultimaActividad[0] = (int) (System.currentTimeMillis() / 1000L);
+                if (abortar[0]) return; // la respuesta llego tras cancelar: se descarta
                 ChatMsg msg = messages.get(placeholderIdx);
                 msg.thinking = false;
                 msg.text = cleanAssistantText(msg.text + chunk);
@@ -837,9 +857,10 @@ public class Panel_De_Chatbot extends JPanel {
                 });
             },
             () -> {
-                if (timeoutTimer.isRunning()) {
-                    timeoutTimer.stop();
+                if (timerRef[0].isRunning()) {
+                    timerRef[0].stop();
                 }
+                if (abortar[0]) return; // ya se mostro el aviso de cancelacion
                 SwingUtilities.invokeLater(() -> {
                     ChatMsg msg = messages.get(placeholderIdx);
                     msg.thinking = false;

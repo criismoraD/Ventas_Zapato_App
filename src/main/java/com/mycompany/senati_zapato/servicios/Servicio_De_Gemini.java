@@ -878,8 +878,11 @@ public class Servicio_De_Gemini {
             }
             userParts.add(Part.fromText(userMessage));
 
+            // El nivel de thinking se respeta la configuracion del usuario (GEMINI_THINKING).
+            // Antes estaba fijo en "MINIMAL", ignorando el .env; con HIGH el modelo razona
+            // mas lento pero las consultas de inventario/flujo necesitan ese margen.
             GenerateContentConfig config = GenerateContentConfig.builder()
-                    .thinkingConfig(ThinkingConfig.builder().thinkingLevel("MINIMAL").build())
+                    .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ConfiguracionThinking()).build())
                     .systemInstruction(Content.builder()
                             .parts(List.of(Part.fromText(SYSTEM_PROMPT)))
                             .build())
@@ -914,15 +917,26 @@ public class Servicio_De_Gemini {
                 conversacion.add(Content.builder().role("user").parts(userParts).build());
                 todoTexto.setLength(0);
                 chunksOk.clear();
+                // El intento 1 (modelo vigente) emite EN VIVO para que la UI vea progreso y su
+                // watchdog de inactividad se reinicie. Los reintentos se bufferean y solo se
+                // sueltan si tienen exito, para no duplicar texto si el modelo caido ya emitio.
+                final boolean esIntentoPrincipal = (m == candidatos.get(0));
+                final boolean[] yaEmitioEnVivo = {false};
                 try {
                     procesarRondaRecursiva(m, conversacion, config, chunk -> {
                         todoTexto.append(chunk);
                         chunksOk.add(chunk);
+                        if (esIntentoPrincipal) {
+                            yaEmitioEnVivo[0] = true;
+                            onChunk.accept(chunk);
+                        }
                     }, 0);
                     // Si hubo texto o tool-calls (la conversacion crecio), se considera exito.
                     if (todoTexto.length() > 0 || conversacion.size() > 1) {
-                        for (String c : chunksOk) {
-                            onChunk.accept(c);
+                        if (!yaEmitioEnVivo[0]) {
+                            for (String c : chunksOk) {
+                                onChunk.accept(c);
+                            }
                         }
                         if (!m.equals(model)) {
                             model = m;
