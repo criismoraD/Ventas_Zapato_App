@@ -64,6 +64,22 @@ public class Panel_De_Ventas extends JPanel {
     private JButton btnCobrar;
     private List<Producto> productosMostrados = new ArrayList<>();
     private javax.swing.JScrollPane scrollGrid;
+    private JTable cartTable;
+
+    // ── Filtros aplicados por el asistente (color, precio, talla) ──
+    private String filtroColor = null;
+    private Double filtroPrecioMax = null;
+    private Double filtroPrecioMin = null;
+    // "menos de 150" es estricto (excluye 150); "hasta 150" lo incluye.
+    private boolean precioMaxEstricto = false;
+    private String filtroTalla = null;
+    private boolean hayFiltroAsistente = false;
+    private JPanel lblFiltroAsistente;   // Chip informativo con botón para limpiar
+    private JLabel chipLabel;
+    private JPanel tabsPanelRef;        // Referencia a las pestañas de categoría
+    private String filtroTextoChip = "";
+    private String consultaOriginal = "";
+    private boolean totalColumnVisible = true;
 
     private static final java.util.Map<String, javax.swing.ImageIcon> IMAGE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final java.util.concurrent.ExecutorService IMAGE_LOAD_EXECUTOR = java.util.concurrent.Executors.newFixedThreadPool(4);
@@ -108,11 +124,31 @@ public class Panel_De_Ventas extends JPanel {
         leftPanel.setBackground(Gestor_De_Temas.getPanelBgColor());
         leftPanel.setBorder(BorderFactory.createLineBorder(Gestor_De_Temas.getBorderColor(), 1));
 
+        // Cabecera del carrito con boton para mostrar/ocultar la columna Total
+        JPanel headerCarrito = new JPanel(new BorderLayout());
+        headerCarrito.setBackground(Gestor_De_Temas.getPanelBgColor());
+        headerCarrito.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+
         JLabel lblTicketHeader = new JLabel("Lista de Compras", SwingConstants.CENTER);
         lblTicketHeader.setFont(new Font("Georgia", Font.BOLD, 22));
         lblTicketHeader.setForeground(Gestor_De_Temas.getTextColor());
-        lblTicketHeader.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
-        leftPanel.add(lblTicketHeader, BorderLayout.NORTH);
+        headerCarrito.add(lblTicketHeader, BorderLayout.CENTER);
+
+        // Boton conmutador: oculta el Total para dar ese espacio a la columna Producto
+        final JButton btnToggleTotal = new JButton();
+        btnToggleTotal.setFocusPainted(false);
+        btnToggleTotal.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnToggleTotal.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        btnToggleTotal.setContentAreaFilled(false);
+        btnToggleTotal.setOpaque(false);
+        btnToggleTotal.setToolTipText("Ocultar la columna Total");
+        btnToggleTotal.setIcon(new Icono_Elegante(Icono_Elegante.Type.EYE, 20, Gestor_De_Temas.getMutedColor()));
+        btnToggleTotal.addActionListener(e -> {
+            Alternar_Columna_Total(btnToggleTotal);
+        });
+        headerCarrito.add(btnToggleTotal, BorderLayout.EAST);
+
+        leftPanel.add(headerCarrito, BorderLayout.NORTH);
 
         String[] columns = { "ID", "Cant", "Producto", "Total", "X" };
         tableModel = new DefaultTableModel(columns, 0) {
@@ -122,7 +158,8 @@ public class Panel_De_Ventas extends JPanel {
             }
         };
 
-        JTable cartTable = new JTable(tableModel);
+        // Columna ID oculta, "Total" conmutable desde el boton de la cabecera
+        cartTable = new JTable(tableModel);
         cartTable.setRowHeight(48);
         cartTable.setBackground(Gestor_De_Temas.getPanelBgColor());
         cartTable.setForeground(Gestor_De_Temas.getTextColor());
@@ -141,6 +178,8 @@ public class Panel_De_Ventas extends JPanel {
         
         cartTable.getColumnModel().getColumn(1).setPreferredWidth(50); // Cant
         cartTable.getColumnModel().getColumn(2).setPreferredWidth(200); // Prod
+        cartTable.getColumnModel().getColumn(3).setMinWidth(90); // Total
+        cartTable.getColumnModel().getColumn(3).setMaxWidth(110);
         cartTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Total
         cartTable.getColumnModel().getColumn(4).setPreferredWidth(50); // Delete (X)
 
@@ -321,15 +360,44 @@ public class Panel_De_Ventas extends JPanel {
             public void changedUpdate(DocumentEvent e) { filterList(); }
             private void filterList() {
                 lblSearchIcon.setVisible(txtSearch.getText().isEmpty());
+                // La busqueda manual se COMBINA con los filtros del asistente: buscar
+                // "Oxford" con el filtro talla 44 debe intersectar ambos, no vaciar uno.
                 aplicarFiltros();
+                Actualizar_Chip_Filtro();
             }
         });
         
         headerRightPanel.add(txtSearch, BorderLayout.NORTH);
 
+        // ── Chip de filtro aplicado por el asistente ──
+        // Indica por qué se está filtrando el catálogo y permite quitarlo con la X.
+        lblFiltroAsistente = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        lblFiltroAsistente.setVisible(false);
+        lblFiltroAsistente.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Gestor_De_Temas.getAccentColor(), 1),
+            BorderFactory.createEmptyBorder(4, 10, 4, 6)
+        ));
+        chipLabel = new JLabel("");
+        chipLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        chipLabel.setForeground(Gestor_De_Temas.getTextColor());
+        lblFiltroAsistente.add(chipLabel);
+
+        JButton btnQuitarFiltro = new JButton();
+        btnQuitarFiltro.setIcon(new Icono_Elegante(Icono_Elegante.Type.CLOSE, 14, new Color(220, 53, 69)));
+        btnQuitarFiltro.setFocusPainted(false);
+        btnQuitarFiltro.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnQuitarFiltro.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        btnQuitarFiltro.setContentAreaFilled(false);
+        btnQuitarFiltro.setToolTipText("Quitar el filtro");
+        btnQuitarFiltro.addActionListener(e -> Limpiar_Filtro_Asistente());
+        lblFiltroAsistente.add(btnQuitarFiltro);
+
+        headerRightPanel.add(lblFiltroAsistente, BorderLayout.SOUTH);
+
         // Tabs de Filtros (Categorías de Zapatos)
         JPanel tabsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         tabsPanel.setOpaque(false);
+        tabsPanelRef = tabsPanel;
         String[] categorias = {"Todos", "Zapatos de vestir", "Zapatos casuales", "Mocasines", "Botas"};
         
         for (String cat : categorias) {
@@ -401,6 +469,38 @@ public class Panel_De_Ventas extends JPanel {
         });
     }
     
+    /**
+     * Muestra u oculta la columna "Total" del carrito. Al ocultarla, el ancho que ocupaba
+     * pasa a la columna "Producto", que es la que realmente interesa leer (el total ya
+     * se muestra abajo como TOTAL A PAGAR).
+     */
+    private void Alternar_Columna_Total(JButton boton) {
+        totalColumnVisible = !totalColumnVisible;
+        if (cartTable == null) return;
+
+        javax.swing.table.TableColumn colTotal = cartTable.getColumnModel().getColumn(3);
+        javax.swing.table.TableColumn colProducto = cartTable.getColumnModel().getColumn(2);
+
+        if (totalColumnVisible) {
+            colTotal.setMinWidth(90);
+            colTotal.setMaxWidth(110);
+            colTotal.setPreferredWidth(100);
+            colProducto.setPreferredWidth(200);
+            boton.setToolTipText("Ocultar la columna Total");
+            boton.setIcon(new Icono_Elegante(Icono_Elegante.Type.EYE, 20, Gestor_De_Temas.getMutedColor()));
+        } else {
+            colTotal.setMinWidth(0);
+            colTotal.setMaxWidth(0);
+            colTotal.setPreferredWidth(0);
+            colTotal.setWidth(0);
+            colProducto.setPreferredWidth(300);
+            boton.setToolTipText("Mostrar la columna Total");
+            boton.setIcon(new Icono_Elegante(Icono_Elegante.Type.EYE, 20, Gestor_De_Temas.getAccentColor()));
+        }
+        cartTable.revalidate();
+        cartTable.repaint();
+    }
+
     private void updateTotals() {
         double sub = 0;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -418,6 +518,249 @@ public class Panel_De_Ventas extends JPanel {
     public void Refrescar_Catalogo() {
         todosLosProductos = productoDAO.Obtener_Todos();
         aplicarFiltros();
+    }
+
+    // =========================================================================
+    // FILTRADO POR CONSULTA DEL ASISTENTE
+    // Interpreta texto libre ("zapatos negros menos de 150 soles") y deja el
+    // catálogo filtrado. Devuelve un resumen para que el modelo responda con datos.
+    // =========================================================================
+
+    /**
+     * Alias de color -> forma canonica (masculino singular).
+     * Se necesita el mapa porque el usuario escribe "negras" o "rojos" y los
+     * productos se llaman "Mocasín Clásico Negro". Sin canonizar, "negras" no
+     * encontraba nada y el filtro devolvia cero resultados.
+     */
+    private static final java.util.Map<String, String> COLORES_CANONICOS = new java.util.LinkedHashMap<>();
+    static {
+        registrarColor("negro",   "negro", "negra", "negros", "negras");
+        registrarColor("blanco",  "blanco", "blanca", "blancos", "blancas");
+        registrarColor("marrón",  "marrón", "marrones", "marron");
+        registrarColor("café",    "café", "cafes", "cafe");
+        registrarColor("beige",   "beige", "beiges");
+        registrarColor("azul",    "azul", "azules");
+        registrarColor("rojo",    "rojo", "roja", "rojos", "rojas");
+        registrarColor("verde",   "verde", "verdes");
+        registrarColor("gris",    "gris", "grises");
+        registrarColor("plateado", "plateado", "plateados", "plateada", "plateadas");
+        registrarColor("dorado",  "dorado", "dorados", "dorada", "doradas");
+        registrarColor("vino",    "vino", "vinos");
+        registrarColor("burdeos", "burdeos");
+        registrarColor("turquesa", "turquesa", "turquesas");
+        registrarColor("crema",   "crema", "cremas");
+        registrarColor("naranja", "naranja", "naranjas");
+        registrarColor("amarillo", "amarillo", "amarillos", "amarilla", "amarillas");
+        registrarColor("lila",    "lila", "lilas");
+        registrarColor("morado",  "morado", "morados", "morada", "moradas");
+    }
+
+    private static void registrarColor(String canonico, String... alias) {
+        for (String a : alias) COLORES_CANONICOS.put(a, canonico);
+    }
+
+    /**
+     * Aplica el filtro deducido de la consulta del usuario y devuelve un resumen
+     * de los productos encontrados (nombre + precio) para que el asistente responda.
+     */
+    public String Aplicar_Filtro_Desde_Chatbot(String consulta) {
+        if (consulta == null || consulta.trim().isEmpty()) {
+            return "Error: consulta vacia.";
+        }
+        todosLosProductos = productoDAO.Obtener_Todos();
+        consultaOriginal = consulta;
+
+        Interpretar_Consulta(consulta);
+        Aplicar_Categoria_Detectada(consulta);
+
+        // Limpia la busqueda manual para que no se reste el filtro del asistente.
+        txtSearch.setText("");
+        aplicarFiltros();
+        Actualizar_Chip_Filtro();
+
+        return Resumen_Productos_Filtrados();
+    }
+
+    /**
+     * Detecta color, rango de precios y talla dentro de la frase del usuario.
+     *
+     * IMPORTANTE: los filtros se ACUMULAN, no se reemplazan. Si el usuario pide
+     * "zapatos talla 44" y luego "en negros", debe quedar talla 44 + negro. Por eso
+     * aqui NO se resetea nada al principio: solo se sobrescribe la dimension que
+     * la frase nueva menciona de forma explicita.
+     */
+    private void Interpretar_Consulta(String consulta) {
+        String q = consulta.toLowerCase();
+        // Quita acentos para comparar "marron" contra "marrón".
+        String qPlano = Normalizer.normalize(q, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+
+        // Peticiones de reinicio explicitas: "ver todo", "quita el filtro", "sin filtro".
+        if (qPlano.matches(".*\\b(ver\\s+todo|muestra(me)?\\s+todo|todo\\s+el\\s+catalogo|quita(r)?\\s+(el\\s+)?filtro|sin\\s+filtro|limpia(r)?\\s+filtro|sin\\s+restricciones?)\\b.*")) {
+            hayFiltroAsistente = false;
+            filtroColor = null;
+            filtroPrecioMax = null;
+            filtroPrecioMin = null;
+            filtroTalla = null;
+            precioMaxEstricto = false;
+            return;
+        }
+
+        // Color: se canoniza ("negras" -> "negro") para que encuentre "Clásico Negro".
+        for (java.util.Map.Entry<String, String> e : COLORES_CANONICOS.entrySet()) {
+            String aliasPlano = Normalizer.normalize(e.getKey(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+            if (qPlano.contains(aliasPlano)) {
+                filtroColor = e.getValue();
+                hayFiltroAsistente = true;
+                break;
+            }
+        }
+
+        // "menos de 150", "hasta 150", "bajo 150", "maximo 150"
+        java.util.regex.Matcher mMax = java.util.regex.Pattern
+            .compile("(menos\\s+de|hasta|maximo|max|bajo|menor\\s+a)\\s*(s\\/)?\\s*(\\d+(?:\\.\\d+)?)")
+            .matcher(qPlano);
+        if (mMax.find()) {
+            filtroPrecioMax = Double.parseDouble(mMax.group(3));
+            // "menos de 150" excluye el 150; "hasta 150" y "maximo 150" lo incluyen.
+            precioMaxEstricto = qPlano.substring(mMax.start(), mMax.end()).startsWith("menos")
+                    || qPlano.substring(mMax.start(), mMax.end()).startsWith("menor");
+            hayFiltroAsistente = true;
+        }
+        // "mas de 150", "desde 150", "minimo 150", "sobre 150"
+        java.util.regex.Matcher mMin = java.util.regex.Pattern
+            .compile("(mas\\s+de|desde|minimo|sobre)\\s*(s\\/)?\\s*(\\d+(?:\\.\\d+)?)")
+            .matcher(qPlano);
+        if (mMin.find()) {
+            filtroPrecioMin = Double.parseDouble(mMin.group(3));
+            hayFiltroAsistente = true;
+        }
+
+        // "talla 42"
+        java.util.regex.Matcher mt = java.util.regex.Pattern
+            .compile("talla\\s*(\\d{2})").matcher(qPlano);
+        if (mt.find()) {
+            filtroTalla = mt.group(1);
+            hayFiltroAsistente = true;
+        }
+    }
+
+    /**
+     * Si la consulta menciona una categoria, deja esa pestana activa.
+     * Si NO menciona ninguna, conserva la que ya habia ("zapatos talla 44" y luego
+     * "en negros" debe seguir en la misma categoria, no volver a "Todos").
+     */
+    private void Aplicar_Categoria_Detectada(String consulta) {
+        String q = Normalizer.normalize(consulta.toLowerCase(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        if (q.contains("bota")) {
+            currentCategory = "Botas";
+        } else if (q.contains("mocasin")) {
+            currentCategory = "Mocasines";
+        } else if (q.contains("casual")) {
+            currentCategory = "Zapatos casuales";
+        } else if (q.contains("vestir") || q.contains("formal") || q.contains("elegante")) {
+            currentCategory = "Zapatos de vestir";
+        } else if (q.matches(".*\\b(ver\\s+todo|muestra(me)?\\s+todo|todo\\s+el\\s+catalogo)\\b.*")) {
+            currentCategory = "Todos";
+        }
+        // Sin mencion de categoria: se mantiene la actual a proposito (contexto).
+        Sincronizar_Pestana_Visual();
+    }
+
+    /** Pinta la pestana activa luego de un cambio programático de categoría. */
+    private void Sincronizar_Pestana_Visual() {
+        if (tabsPanelRef == null) return;
+        for (Component c : tabsPanelRef.getComponents()) {
+            if (c instanceof JButton) {
+                boolean activo = ((JButton) c).getText().equals(currentCategory);
+                ((JButton) c).setForeground(activo ? Gestor_De_Temas.getTextColor() : Gestor_De_Temas.getMutedColor());
+                ((JButton) c).setBackground(activo ? Gestor_De_Temas.getAccentColor() : Gestor_De_Temas.getBgColor());
+            }
+        }
+    }
+
+    /** Muestra u oculta el chip que indica el filtro activo del asistente. */
+    private void Actualizar_Chip_Filtro() {
+        if (lblFiltroAsistente == null) return;
+        if (!hayFiltroAsistente) {
+            lblFiltroAsistente.setVisible(false);
+            return;
+        }
+        filtroTextoChip = Descripcion_Filtro_Activo();
+        chipLabel.setText(filtroTextoChip.isEmpty() ? "Filtro: todos" : "Filtro: " + filtroTextoChip);
+        lblFiltroAsistente.setVisible(true);
+    }
+
+    private String capitalizar(String s) {
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    /** Limpia los filtros del asistente (boton X del chip). */
+    private void Limpiar_Filtro_Asistente() {
+        filtroColor = null;
+        filtroPrecioMax = null;
+        filtroPrecioMin = null;
+        filtroTalla = null;
+        hayFiltroAsistente = false;
+        filtroTextoChip = "";
+        consultaOriginal = "";
+        precioMaxEstricto = false;
+        currentCategory = "Todos";
+        Sincronizar_Pestana_Visual();
+        if (lblFiltroAsistente != null) lblFiltroAsistente.setVisible(false);
+        aplicarFiltros();
+    }
+
+    /** Texto que el modelo recibe como resultado de la herramienta. */
+    private String Resumen_Productos_Filtrados() {
+        // Se le devuelve al modelo el filtro COMPLETO (acumulado), para que su respuesta
+        // mencione talla y color a la vez y no repita solo lo de la ultima frase.
+        StringBuilder cab = new StringBuilder("Catalogo de Ventas filtrado");
+        String desc = Descripcion_Filtro_Activo();
+        if (!desc.isEmpty()) cab.append(" (").append(desc).append(")");
+        cab.append(": ");
+
+        List<Producto> encontrados = productosMostrados;
+        if (encontrados.isEmpty()) {
+            return cab.append("0 productos. No hay resultados con ese filtro.").toString();
+        }
+        // "el mas barato" / "el mas caro": se ordena y se prioriza el extremo.
+        // Se lee de la consulta original: el chip solo describe color/precio/talla.
+        String q = consultaOriginal != null ? consultaOriginal.toLowerCase() : "";
+        List<Producto> copia = new ArrayList<>(encontrados);
+        if (q.contains("barat")) {
+            copia.sort((a, b) -> Double.compare(a.Get_Precio(), b.Get_Precio()));
+        } else if (q.contains("caro")) {
+            copia.sort((a, b) -> Double.compare(b.Get_Precio(), a.Get_Precio()));
+        }
+
+        int max = Math.min(copia.size(), 6);
+        StringBuilder sb = new StringBuilder(cab);
+        sb.append(copia.size()).append(" producto(s). ");
+        for (int i = 0; i < max; i++) {
+            Producto p = copia.get(i);
+            sb.append(p.Get_Nombre()).append(" S/ ").append(String.format("%.2f", p.Get_Precio()));
+            // La talla se incluye porque el filtro puede venir de un turno anterior.
+            if (filtroTalla != null && p.Get_Tallas() != null && !p.Get_Tallas().trim().isEmpty()) {
+                sb.append(" (tallas ").append(p.Get_Tallas()).append(")");
+            }
+            if (i < max - 1) sb.append(", ");
+        }
+        if (copia.size() > max) sb.append(", y ").append(copia.size() - max).append(" mas.");
+        return sb.toString();
+    }
+
+    /** Descripcion legible de TODOS los filtros activos (acumulados). */
+    private String Descripcion_Filtro_Activo() {
+        List<String> partes = new ArrayList<>();
+        if (filtroColor != null) partes.add(capitalizar(filtroColor));
+        if (filtroPrecioMax != null) {
+            partes.add((precioMaxEstricto ? "menos de S/ " : "hasta S/ ")
+                    + String.format("%.0f", filtroPrecioMax));
+        }
+        if (filtroPrecioMin != null) partes.add("desde S/ " + String.format("%.0f", filtroPrecioMin));
+        if (filtroTalla != null) partes.add("talla " + filtroTalla);
+        if (currentCategory != null && !currentCategory.equals("Todos")) partes.add(currentCategory);
+        return String.join(" + ", partes);
     }
 
     public String Agregar_Producto_Al_Carrito(String busqueda, int cantidad) {
@@ -529,20 +872,57 @@ public class Panel_De_Ventas extends JPanel {
     }
 
     private void aplicarFiltros() {
-        String searchText = txtSearch.getText().toLowerCase();
+        String searchText = txtSearch.getText().toLowerCase().trim();
         List<Producto> filtrados = new ArrayList<>();
         
         for (Producto p : todosLosProductos) {
-            boolean matchesSearch = p.Get_Nombre().toLowerCase().contains(searchText) || 
+            boolean matchesSearch = searchText.isEmpty() || 
+                                    p.Get_Nombre().toLowerCase().contains(searchText) || 
                                     (p.Get_Codigo() != null && p.Get_Codigo().toLowerCase().contains(searchText));
             boolean matchesCat = currentCategory.equals("Todos") || 
                                  (p.Get_Categoria() != null && p.Get_Categoria().equalsIgnoreCase(currentCategory));
-                                 
-            if (matchesSearch && matchesCat) {
+            
+            if (matchesSearch && matchesCat && Cumple_Filtro_Asistente(p)) {
                 filtrados.add(p);
             }
         }
+        // "el mas barato" / "el mas caro": se ordena tambien en pantalla, no solo en el texto.
+        String q = consultaOriginal != null ? consultaOriginal.toLowerCase() : "";
+        if (q.contains("barat")) {
+            filtrados.sort((a, b) -> Double.compare(a.Get_Precio(), b.Get_Precio()));
+        } else if (q.contains("caro") || q.contains("precio")) {
+            filtrados.sort((a, b) -> Double.compare(b.Get_Precio(), a.Get_Precio()));
+        }
         cargarProductos(filtrados);
+    }
+
+    /** Aplica color, precio y talla que el asistente haya deducido de la pregunta. */
+    private boolean Cumple_Filtro_Asistente(Producto p) {
+        if (!hayFiltroAsistente) return true;
+
+        if (filtroColor != null) {
+            String nombre = normalizar(p.Get_Nombre());
+            if (!nombre.contains(normalizar(filtroColor))) return false;
+        }
+        if (filtroPrecioMax != null) {
+            if (precioMaxEstricto) {
+                if (p.Get_Precio() >= filtroPrecioMax) return false;
+            } else if (p.Get_Precio() > filtroPrecioMax) {
+                return false;
+            }
+        }
+        if (filtroPrecioMin != null && p.Get_Precio() < filtroPrecioMin) return false;
+        if (filtroTalla != null) {
+            // Comparacion EXACTA por token: si no, "44" apareceria dentro de "40,41"
+            // o "38,39,40,41,42" y el filtro dejaria pasar productos que no la tienen.
+            String[] disponibles = (p.Get_Tallas() != null ? p.Get_Tallas() : "").split("[,\\s]+");
+            boolean tieneTalla = false;
+            for (String t : disponibles) {
+                if (t.trim().equals(filtroTalla)) { tieneTalla = true; break; }
+            }
+            if (!tieneTalla) return false;
+        }
+        return true;
     }
 
     private void cargarProductos(List<Producto> productos) {

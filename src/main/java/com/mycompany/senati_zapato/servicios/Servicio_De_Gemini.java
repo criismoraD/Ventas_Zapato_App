@@ -25,6 +25,9 @@ public class Servicio_De_Gemini {
     private java.util.function.Supplier<String> onCheckout;
     private java.util.function.Supplier<String> onCancel;
     private java.util.function.Consumer<Boolean> onSetDarkMode;
+    // Lleva al modulo Ventas y filtra el catalogo por lo que pregunto el usuario
+    // (color, precio, talla, categoria). Devuelve un resumen legible para el modelo.
+    private java.util.function.Function<String, String> onShowInSales;
 
     public void setOnNavigate(Consumer<String> onNavigate) {
         this.onNavigate = onNavigate;
@@ -44,6 +47,10 @@ public class Servicio_De_Gemini {
 
     public void setOnSetDarkMode(java.util.function.Consumer<Boolean> onSetDarkMode) {
         this.onSetDarkMode = onSetDarkMode;
+    }
+
+    public void setOnShowInSales(java.util.function.Function<String, String> onShowInSales) {
+        this.onShowInSales = onShowInSales;
     }
 
     // =========================================================================
@@ -237,17 +244,33 @@ public class Servicio_De_Gemini {
         "Categorías válidas: Mocasines, Botas, Zapatillas, Sandalias, Deportivos, Urbanos, Elegantes.\n" +
         "Tallas por defecto si no se especifican: 38,39,40,41,42.\n" +
         "Responde en español con máximo 2 frases cortas. " +
+        "Tienes memoria de la conversación: usa el contexto de los mensajes anteriores para " +
+        "entender follow-ups como 'verifícalo', '¿y en negro?' o 'cuántos de esos?'. " +
+        "Si el usuario da una orden corta y ambigua, interpreta que se refiere a lo último que " +
+        "hablaron y responde con la información que pides, en vez de preguntar de nuevo qué verificar. " +
         "No uses Markdown, no uses asteriscos, no uses negritas y no hagas listas largas. " +
         "Si el usuario pide ir, cambiar o navegar a Ventas, Inventario, Reportes o Inicio, usa obligatoriamente la herramienta navegar_modulo y responde confirmando. " +
+        "Si el usuario pregunta por colores, por precios, por los mas baratos o caros, por una talla o por que productos hay de cierta categoria, " +
+        "usa obligatoriamente la herramienta mostrar_en_ventas con el texto literal de su consulta: eso abre el modulo Ventas y deja el catalogo ya filtrado, " +
+        "y tu debes responder con el resultado que te devuelva, mencionando nombres y precios concretos. " +
+        "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
+        "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
+        "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
         "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago. Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
         "Si el usuario pide activar o desactivar el modo oscuro, modo noche o modo claro, usa la herramienta cambiar_modo_oscuro.";
 
     private Client client;
     // Modelo efectivo actual (principal o fallback vigente). Se re-lee de Configuracion al reconectar.
     private String model;
-    // Historial SOLO de la llamada en curso (LLM stateless por llamada, sin bot interno persistente).
-    // Se descarta al terminar cada mensaje para no arrastrar contexto viejo ni entrenamientos.
+    // Memoria conversacional entre mensajes. Antes se declaraba aqui pero NUNCA se usaba:
+    // cada mensaje era una llamada aislada, por eso el bot olvidaba el tema anterior y ante un
+    // "verifica porfa" respondia "¿que te gustaria verificar?".
+    // Se guardan SOLO turnos de texto (user + model). Nunca las partes de functionCall, porque
+    // su thoughtSignature pertenece a una unica llamada y la API la rechaza en otra.
     private final List<Content> history = new ArrayList<>();
+    // Tope de turnos que se recuerdan. Cada turno = 1 mensaje del usuario + 1 del asistente.
+    // Sin este limite la conversacion crecia sin fin y subia el costo por token.
+    private static final int MAX_TURNOS_MEMORIA = 8;
     private List<Tool> tools;
     private final Dao_De_Producto productoDAO;
     private final Dao_De_Venta ventaDAO;
@@ -455,6 +478,21 @@ public class Servicio_De_Gemini {
                                         "modulo", Schema.builder().type(new Type(Type.Known.STRING)).description("Módulo destino. Valores permitidos: Inicio, Ventas, Gestor, Reportes").build()
                                 ))
                                 .required(List.of("modulo"))
+                                .build())
+                        .build())
+                .build());
+
+        // mostrar_en_ventas
+        toolList.add(Tool.builder()
+                .functionDeclarations(FunctionDeclaration.builder()
+                        .name("mostrar_en_ventas")
+                        .description("Abre el modulo Ventas y deja el catalogo filtrado por lo que pidio el usuario: color, precio (maximo o minimo), talla o categoria. Usala SIEMPRE que pregunten que hay de un color, que precio tienen, cuales son mas baratos o mas caros, o que productos hay de una talla")
+                        .parameters(Schema.builder()
+                                .type(new Type(Type.Known.OBJECT))
+                                .properties(Map.of(
+                                        "consulta", Schema.builder().type(new Type(Type.Known.STRING)).description("Texto literal del usuario con el filtro, por ejemplo: zapatos negros, menos de 150 soles, el mas barato, talla 42, mocasins marrones").build()
+                                ))
+                                .required(List.of("consulta"))
                                 .build())
                         .build())
                 .build());
@@ -725,6 +763,16 @@ public class Servicio_De_Gemini {
                 }
                 return "Error: callback de navegación no configurado.";
             }
+            case "mostrar_en_ventas": {
+                String consulta = (String) args.get("consulta");
+                if (consulta == null || consulta.trim().isEmpty()) {
+                    return "Error: falta el parametro consulta";
+                }
+                if (onShowInSales != null) {
+                    return onShowInSales.apply(consulta);
+                }
+                return "Error: callback de mostrar en ventas no configurado.";
+            }
             case "agregar_carrito": {
                 String producto = (String) args.get("producto");
                 int cantidad = 1;
@@ -879,10 +927,11 @@ public class Servicio_De_Gemini {
             userParts.add(Part.fromText(userMessage));
 
             // El nivel de thinking se respeta la configuracion del usuario (GEMINI_THINKING).
-            // Antes estaba fijo en "MINIMAL", ignorando el .env; con HIGH el modelo razona
-            // mas lento pero las consultas de inventario/flujo necesitan ese margen.
-            GenerateContentConfig config = GenerateContentConfig.builder()
-                    .thinkingConfig(ThinkingConfig.builder().thinkingLevel(ConfiguracionThinking()).build())
+            // Antes estaba fijo en "MINIMAL", ignorando el .env.
+            // IMPORTANTE: la familia Gemma NO admite thinkingLevel y responde 400
+            // ("Thinking level is not supported for this model"), asi que solo se envia
+            // a los modelos Gemini. Los Gemma se invocan sin thinking.
+            GenerateContentConfig.Builder cfg = GenerateContentConfig.builder()
                     .systemInstruction(Content.builder()
                             .parts(List.of(Part.fromText(SYSTEM_PROMPT)))
                             .build())
@@ -893,8 +942,11 @@ public class Servicio_De_Gemini {
                     .toolConfig(ToolConfig.builder()
                             .includeServerSideToolInvocations(true)
                             .build())
-                    .tools(Construir_Tools_Efectivas())
-                    .build();
+                    .tools(Construir_Tools_Efectivas());
+            if (Soportan_Thinking(candidatosModelos())) {
+                cfg.thinkingConfig(ThinkingConfig.builder().thinkingLevel(ConfiguracionThinking()).build());
+            }
+            GenerateContentConfig config = cfg.build();
 
             // --- RECURSIVIDAD ---
             // El procesamiento de function calls de Gemini se maneja de forma recursiva.
@@ -902,18 +954,16 @@ public class Servicio_De_Gemini {
             // las ejecuta y se llama a si misma para la siguiente ronda (hasta 5 niveles).
             // Se prueba principal -> secundarios y se guarda el modelo que funciono.
             // LLM stateless por llamada: historial fresco SOLO con este mensaje.
-            List<String> candidatos = com.mycompany.senati_zapato.utilidades.Configuracion.Obtener_Modelos_Chat_Fallback();
-            // Pon el modelo actual primero para no reprobar el que ya funciona.
-            if (model != null && candidatos.contains(model)) {
-                candidatos.remove(model);
-                candidatos.add(0, model);
-            }
+            List<String> candidatos = candidatosModelos();
             boolean ok = false;
             StringBuilder todoTexto = new StringBuilder();
             List<String> chunksOk = new ArrayList<>();
             String errorFinal = null;
             for (String m : candidatos) {
-                List<Content> conversacion = new ArrayList<>();
+                // La conversacion arranca con la memoria de turnos anteriores y anade el
+                // mensaje actual. Antes se creaba vacia en cada llamada (una sola entrada),
+                // por eso el asistente no recordaba de que se hablaba.
+                List<Content> conversacion = new ArrayList<>(Memoria_De_Conversacion());
                 conversacion.add(Content.builder().role("user").parts(userParts).build());
                 todoTexto.setLength(0);
                 chunksOk.clear();
@@ -922,8 +972,11 @@ public class Servicio_De_Gemini {
                 // sueltan si tienen exito, para no duplicar texto si el modelo caido ya emitio.
                 final boolean esIntentoPrincipal = (m == candidatos.get(0));
                 final boolean[] yaEmitioEnVivo = {false};
+                // El exito lo decide el servicio (hubo texto o tool-call), NO el tamano de la
+                // conversacion: al anadir memoria, conversacion.size() ya es > 1 siempre y
+                // ese chequeo daba exito falso (sebia de un modelo que no respondio nada).
                 try {
-                    procesarRondaRecursiva(m, conversacion, config, chunk -> {
+                    boolean respondio = procesarRondaRecursiva(m, conversacion, config, chunk -> {
                         todoTexto.append(chunk);
                         chunksOk.add(chunk);
                         if (esIntentoPrincipal) {
@@ -931,8 +984,7 @@ public class Servicio_De_Gemini {
                             onChunk.accept(chunk);
                         }
                     }, 0);
-                    // Si hubo texto o tool-calls (la conversacion crecio), se considera exito.
-                    if (todoTexto.length() > 0 || conversacion.size() > 1) {
+                    if (respondio) {
                         if (!yaEmitioEnVivo[0]) {
                             for (String c : chunksOk) {
                                 onChunk.accept(c);
@@ -942,18 +994,25 @@ public class Servicio_De_Gemini {
                             model = m;
                             com.mycompany.senati_zapato.utilidades.Configuracion.Fijar_En_Memoria("GEMINI_MODEL", m);
                         }
+                        Guardar_En_Memoria(userMessage, todoTexto.toString());
                         ok = true;
                         break;
                     }
+                    errorFinal = "el modelo no devolvio texto ni herramienta";
                 } catch (Exception ex) {
                     errorFinal = ex.getMessage();
                     System.err.println("[Gemini] Modelo " + m + " fallo: " + errorFinal + ". Probando siguiente...");
                 }
             }
             if (!ok) {
-                onChunk.accept("\nError: no se pudo contactar a ningun modelo (" + String.join(", ", candidatos) + ")."
-                    + (errorFinal != null ? " Detalle: " + errorFinal : "")
-                    + " Revisa tu API key en Configuracion y tu internet.");
+                // El mensaje NO culpa a la API key: un 400 de configuracion (thinking level,
+                // tools) tiene la misma forma que un error de red y el texto anterior hacia
+                // pensar que la clave estaba mal. Se da el error real de la API.
+                onChunk.accept("\nNo pude obtener respuesta del asistente. Detalle del servidor: "
+                    + (errorFinal != null ? errorFinal : "sin informacion")
+                    + "\n\nSi el detalle dice \"Thinking level is not supported\", tu GEMINI_THINKING "
+                    + "es incompatible con uno de los modelos de la lista. Prueba con MINIMAL en Config, "
+                    + "o quita los modelos Gemma de GEMINI_MODELS.");
             }
             onComplete.run();
         }).start();
@@ -965,6 +1024,31 @@ public class Servicio_De_Gemini {
         } catch (Exception e) {
             return "LOW";
         }
+    }
+
+    /** Modelos candidatos en orden de preferencia (el vigente primero). */
+    private List<String> candidatosModelos() {
+        List<String> candidatos = com.mycompany.senati_zapato.utilidades.Configuracion.Obtener_Modelos_Chat_Fallback();
+        if (model != null && candidatos.contains(model)) {
+            candidatos.remove(model);
+            candidatos.add(0, model);
+        }
+        return candidatos;
+    }
+
+    /**
+     * La familia Gemma (modelos *-it) NO admite thinkingLevel: la API responde 400 con
+     * "Thinking level is not supported for this model". Si algun candidato es Gemma se
+     * omite el thinkingConfig para todos, porque la config es comun a la llamada y no
+     * se puede cambiar entre iteraciones del fallback.
+     */
+    private boolean Soportan_Thinking(List<String> modelos) {
+        for (String m : modelos) {
+            if (m == null) continue;
+            String id = m.toLowerCase().replace("models/", "").trim();
+            if (id.startsWith("gemma")) return false;
+        }
+        return true;
     }
 
     private List<Tool> Construir_Tools_Efectivas() {
@@ -992,13 +1076,23 @@ public class Servicio_De_Gemini {
      * Procesa una ronda de comunicación con Gemini de forma RECURSIVA.
      * Stateless por llamada: opera sobre la lista conversacion que se le pasa,
      * NO sobre un historial persistente (sin bot interno entrenado).
+     * @return true si el modelo produjo texto o invoco alguna herramienta en esta llamada.
      */
-    private void procesarRondaRecursiva(String modelo, List<Content> conversacion, GenerateContentConfig config, Consumer<String> onChunk, int ronda) {
-        // CASO BASE: límite de rondas alcanzado
-        if (ronda >= 5) return;
+    private boolean procesarRondaRecursiva(String modelo, List<Content> conversacion, GenerateContentConfig config, Consumer<String> onChunk, int ronda) {
+        // CASO BASE: límite de rondas alcanzado. Antes se terminaba en silencio y el usuario
+        // se quedaba sin respuesta; ahora se fuerza una redacción final sin herramientas.
+        if (ronda >= 5) {
+            return responderSinHerramientas(modelo, conversacion, config, onChunk);
+        }
 
         StringBuilder fullResponse = new StringBuilder();
         List<FunctionCall> functionCalls = new ArrayList<>();
+        // Partes originales del modelo (tal cual las devuelve la API). Son necesarias porque
+        // llevan el thoughtSignature, que Gemini exige devolver en la siguiente ronda cuando
+        // hay thinking + function calling. Reconstruirlas con Part.fromFunctionCall() lo
+        // pierde y la API responde 400.
+        List<Part> partesRazonamiento = new ArrayList<>();
+        List<Part> partesFunctionCall = new ArrayList<>();
 
         try (ResponseStream<GenerateContentResponse> stream = client.models.generateContentStream(modelo, conversacion, config)) {
             for (GenerateContentResponse res : stream) {
@@ -1008,13 +1102,19 @@ public class Servicio_De_Gemini {
                 }
                 List<Part> parts = res.candidates().get().get(0).content().get().parts().get();
                 for (Part part : parts) {
-                    if (part.text().isPresent()) {
+                    // El razonamiento interno (thought=true) NO se muestra al usuario, pero si
+                    // se conserva en la conversacion para no romper la firma de la ronda 2.
+                    boolean esRazonamiento = part.thought().orElse(Boolean.FALSE);
+                    if (part.text().isPresent() && !esRazonamiento) {
                         String chunk = part.text().get();
                         fullResponse.append(chunk);
                         onChunk.accept(chunk);
                     }
                     if (part.functionCall().isPresent()) {
                         functionCalls.add(part.functionCall().get());
+                        partesFunctionCall.add(part);
+                    } else if (esRazonamiento) {
+                        partesRazonamiento.add(part);
                     }
                 }
             }
@@ -1023,20 +1123,20 @@ public class Servicio_De_Gemini {
             throw new RuntimeException("[" + modelo + "] " + e.getMessage(), e);
         }
 
-        // Agregar respuesta del modelo a la conversacion en curso
+        // Agregar respuesta del modelo a la conversacion en curso, REUSANDO las partes
+        // originales para conservar el thoughtSignature que exige la API.
         if (fullResponse.length() > 0 || !functionCalls.isEmpty()) {
             List<Part> modelParts = new ArrayList<>();
             if (fullResponse.length() > 0) {
                 modelParts.add(Part.fromText(fullResponse.toString()));
             }
-            for (FunctionCall fc : functionCalls) {
-                modelParts.add(Part.fromFunctionCall(fc.name().orElse(""), fc.args().orElse(Map.of())));
-            }
+            modelParts.addAll(partesRazonamiento);
+            modelParts.addAll(partesFunctionCall);
             conversacion.add(Content.builder().role("model").parts(modelParts).build());
         }
 
         // CASO BASE: no hay function calls → Gemini ya respondió al usuario, fin
-        if (functionCalls.isEmpty()) return;
+        if (functionCalls.isEmpty()) return fullResponse.length() > 0;
 
         // CASO RECURSIVO: ejecutar las function calls y llamarse para la siguiente ronda
         List<Part> responseParts = new ArrayList<>();
@@ -1054,11 +1154,70 @@ public class Servicio_De_Gemini {
                 .build());
 
         // Llamada recursiva para procesar la siguiente ronda con los resultados
-        procesarRondaRecursiva(modelo, conversacion, config, onChunk, ronda + 1);
+        return procesarRondaRecursiva(modelo, conversacion, config, onChunk, ronda + 1);
     }
 
-    /** Limpia el buffer interno (por compatibilidad; ya es stateless por llamada). */
-    public void Limpiar_Historial() {
+    /**
+     * Ultima ronda: el modelo sigue pidiendo herramientas y se agotaron los intentos.
+     * Se le pide una respuesta final SIN herramientas para que el usuario reciba texto
+     * con lo que ya se trajo, en vez de quedarse con un mensaje vacio.
+     *
+     * @return true si el modelo redacto alguna respuesta.
+     */
+    private boolean responderSinHerramientas(String modelo, List<Content> conversacion,
+                                             GenerateContentConfig config, Consumer<String> onChunk) {
+        boolean respondio = false;
+        try {
+            GenerateContentConfig finalConfig = config.toBuilder()
+                    .tools((List<Tool>) null)
+                    .toolConfig((ToolConfig) null)
+                    .build();
+            try (ResponseStream<GenerateContentResponse> stream =
+                         client.models.generateContentStream(modelo, conversacion, finalConfig)) {
+                for (GenerateContentResponse res : stream) {
+                    if (res.candidates().isEmpty() || res.candidates().get().get(0).content().isEmpty()
+                            || res.candidates().get().get(0).content().get().parts().isEmpty()) {
+                        continue;
+                    }
+                    for (Part part : res.candidates().get().get(0).content().get().parts().get()) {
+                        if (part.text().isPresent() && !part.thought().orElse(Boolean.FALSE)) {
+                            respondio = true;
+                            onChunk.accept(part.text().get());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Gemini] Ronda final sin herramientas fallo: " + e.getMessage());
+            onChunk.accept("\nNo pude completar la consulta: el modelo pidio demasiados datos antes de responder.");
+        }
+        return respondio;
+    }
+
+    /**
+     * Memoria conversacional: ultimos turnos (user + model) para que el asistente entienda
+     * follow-ups como "verifícalo" o "¿y en negro?". Solo texto; las partes de funcion con su
+     * thoughtSignature son de una unica llamada y la API las rechazaria en la siguiente.
+     * Protected porque el envio corre en un hilo aparte al que pinta la UI.
+     */
+    private synchronized List<Content> Memoria_De_Conversacion() {
+        return new ArrayList<>(history);
+    }
+
+    private synchronized void Guardar_En_Memoria(String userMessage, String respuesta) {
+        if (userMessage == null || userMessage.isBlank() || respuesta == null || respuesta.isBlank()) {
+            return;
+        }
+        history.add(Content.builder().role("user").parts(List.of(Part.fromText(userMessage))).build());
+        history.add(Content.builder().role("model").parts(List.of(Part.fromText(respuesta))).build());
+        // Poda por turnos completos (user + model) para no partir un turno por la mitad.
+        while (history.size() > MAX_TURNOS_MEMORIA * 2) {
+            history.remove(0);
+        }
+    }
+
+    /** Borra la memoria conversacional (boton de limpiar chat o cambio de sesion). */
+    public synchronized void Limpiar_Historial() {
         history.clear();
     }
 }

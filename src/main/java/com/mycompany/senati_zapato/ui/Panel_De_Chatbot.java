@@ -112,6 +112,22 @@ public class Panel_De_Chatbot extends JPanel {
             }
             return "Error: referencia a la ventana principal no configurada.";
         });
+        geminiService.setOnShowInSales(consulta -> {
+            if (frameRef != null) {
+                final String[] res = new String[1];
+                try {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        res[0] = frameRef.Mostrar_En_Ventas(consulta);
+                    } else {
+                        SwingUtilities.invokeAndWait(() -> res[0] = frameRef.Mostrar_En_Ventas(consulta));
+                    }
+                } catch (Exception e) {
+                    res[0] = frameRef.Mostrar_En_Ventas(consulta);
+                }
+                return res[0];
+            }
+            return "Error: referencia a la ventana principal no configurada.";
+        });
         geminiService.setOnSetDarkMode(activar -> {
             if (frameRef != null) {
                 frameRef.Establecer_Modo_Oscuro(activar);
