@@ -4,11 +4,14 @@ target/
 *.jar
 *.exe
 
-# Entorno y secretos — NUNCA subir keys reales
+# Secretos — NUNCA subir keys reales
 .env
-Datos_SenatiZapato/
-senati_zapato.db
+
+# La base de datos de ejemplo SI se versiona, pero los respaldos y los
+# comprobantes que genera la app en tiempo de ejecucion no.
 comprobantes/
+*_backup_*.db
+senati_zapato-jdbc*.db
 
 # IDEs
 .idea/
