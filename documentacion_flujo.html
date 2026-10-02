@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación de Flujo - SENATI ZAPATO</title>
+    <style>
+        :root {
+            --bg: #1a1a1a;
+            --surface: #2d2d2d;
+            --accent: #d88b4a; /* Terracota */
+            --text: #fdfbf7;
+            --text-muted: #a0a0a0;
+            --border: #404040;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-family: 'Georgia', serif;
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .flow-container {
+            position: relative;
+        }
+
+        /* Línea conectora central */
+        .flow-container::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+
+        .step {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s forwards;
+        }
+
+        .step:nth-child(1) { animation-delay: 0.2s; }
+        .step:nth-child(2) { animation-delay: 0.4s; }
+        .step:nth-child(3) { animation-delay: 0.6s; }
+        .step:nth-child(4) { animation-delay: 0.8s; }
+        .step:nth-child(5) { animation-delay: 1.0s; }
+
+        .step-content {
+            width: 45%;
+            background: var(--surface);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism sutil */
+        .step-content::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .step-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(216, 139, 74, 0.15);
+            border-color: var(--accent);
+        }
+
+        .step.right .step-content {
+            margin-left: auto;
+        }
+
+        .step-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--bg);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(216, 139, 74, 0.4);
+            z-index: 2;
+        }
+
+        .step h3 {
+            margin-top: 0;
+            color: var(--accent);
+            font-family: 'Georgia', serif;
+            font-size: 1.5rem;
+        }
+
+        .step p {
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .flow-container::before {
+                left: 30px;
+            }
+            .step-icon {
+                left: 30px;
+            }
+            .step-content {
+                width: calc(100% - 80px);
+                margin-left: auto !important;
+            }
+        }
+
+        .code-block {
+            background: #111;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #4ade80;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Arquitectura y Flujo Transaccional</h1>
+        <p class="subtitle">Sistema POS SENATI ZAPATO - Recorrido del ciclo de vida de una venta</p>
+    </header>
+
+    <div class="flow-container">
+        
+        <!-- Paso 1 -->
+        <div class="step left">
+            <div class="step-content">
+                <h3>1. Catálogo e Inicio (Panel_De_Ventas)</h3>
+                <p>El usuario inicia sesión y visualiza el <b>Panel de Ventas</b>. El sistema carga de forma concurrente el catálogo desde SQLite usando <code>Dao_De_Producto.Obtener_Todos()</code>. Las imágenes se procesan asíncronamente en segundo plano.</p>
+            </div>
+            <div class="step-icon">🛒</div>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="step right">
+            <div class="step-content">
+                <h3>2. Selección de Productos</h3>
+                <p>Al hacer clic en un calzado o usar el comando de voz del Chatbot, el producto se añade al <b>JTable</b>. El modelo MVC calcula reactivamente el Subtotal, el IGV y el Total. Se pre-valida el stock de manera visual (sin bloquear la BD aún).</p>
+            </div>
+            <div class="step-icon">📦</div>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="step left">
+            <div class="step-content">
+                <h3>3. Confirmación (Dialogo_De_Pago)</h3>
+                <p>Al presionar <b>F12</b>, se instancia un objeto <code>Venta</code> con sus <code>Detalle_De_Venta</code>. Se despliega el panel modal de pago donde el cajero elige Efectivo, Tarjeta, Yape o Plin y define el monto recibido, calculando el vuelto exacto.</p>
+            </div>
+            <div class="step-icon">💳</div>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="step right">
+            <div class="step-content">
+                <h3>4. Transacción ACID (Procesador_De_Pagos)</h3>
+                <p>El núcleo financiero entra en acción. Se desactiva el autocommit. Se valida el stock <b>físico</b>. Si es exitoso, se ejecuta un <code>INSERT</code> de la cabecera y el detalle, seguido de un <code>UPDATE</code> para descontar el stock. Todo se asegura con un <code>commit()</code> o se revierte con <code>rollback()</code> ante un fallo.</p>
+                <div class="code-block">
+                    connection.setAutoCommit(false);<br>
+                    // Validar Stock<br>
+                    // Insertar Venta<br>
+                    // Restar Stock<br>
+                    connection.commit();
+                </div>
+            </div>
+            <div class="step-icon">🔒</div>
+        </div>
+
+        <!-- Paso 5 -->
+        <div class="step left">
+            <div class="step-content">
+                <h3>5. Cierre y PDF (Generador_De_Pdf)</h3>
+                <p>Tras confirmarse la integridad de la base de datos, el sistema limpia el carrito. Se llama a la librería <b>iText 7</b> para generar un PDF legal (Boleta de Venta) guardado en la carpeta <code>/comprobantes</code>. Simultáneamente se lanza una vista previa en pantalla (<code>Dialogo_De_Ticket</code>).</p>
+            </div>
+            <div class="step-icon">📄</div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
