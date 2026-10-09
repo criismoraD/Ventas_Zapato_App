@@ -52,7 +52,7 @@ public class Dialogo_De_Pago extends JDialog {
     private JButton btnMetodoTransferencia;
 
     public Dialogo_De_Pago(Frame parent, Venta venta) {
-        super(parent, "Procesar Pago - POS", true);
+        super(parent, "Paso 2 de 2 - Procesar Pago - POS", true);
         this.venta = venta;
         this.totalAPagar = venta.Get_Monto_Total();
 
@@ -91,7 +91,7 @@ public class Dialogo_De_Pago extends JDialog {
         headerPanel.setPreferredSize(new Dimension(0, 65));
         headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
-        JLabel lblTitle = new JLabel("PAGO DE TICKET");
+        JLabel lblTitle = new JLabel("PASO 2 DE 2 · MÉTODO DE PAGO");
         lblTitle.setFont(new Font("Georgia", Font.BOLD, 18));
         lblTitle.setForeground(Gestor_De_Temas.getTextColor());
         headerPanel.add(lblTitle, BorderLayout.WEST);

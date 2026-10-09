@@ -58,6 +58,21 @@ public class Dialogo_De_Ticket extends JDialog {
         }
         sb.append(" FECHA HORA: ").append(fecha).append("\n");
         sb.append(" CAJERO    : ").append(venta.Get_Cajero()).append("\n");
+        if (venta.getCliente() != null) {
+            sb.append(lineSep);
+            sb.append(" COMPRADOR:\n");
+            sb.append(" ").append(venta.getCliente().getTipoDocumento()).append(": ")
+                    .append(venta.getCliente().getNumeroDocumento()).append("\n");
+            sb.append(" NOMBRE    : ").append(venta.getCliente().getNombres()).append("\n");
+            if (!venta.getCliente().getTelefono().isBlank()) {
+                sb.append(" TELÉFONO  : ").append(venta.getCliente().getTelefono()).append("\n");
+            }
+            if (!venta.getCliente().getCorreo().isBlank()) {
+                sb.append(" CORREO    : ").append(venta.getCliente().getCorreo()).append("\n");
+            }
+        } else {
+            sb.append(" CLIENTE   : Venta general\n");
+        }
         sb.append(lineSep);
         sb.append(" Cant.  Descripción        P.Unit   Total \n");
         sb.append(lineSep);

@@ -78,6 +78,27 @@ public class Generador_De_Pdf {
             infoTable.addCell(rightInfo);
             document.add(infoTable);
 
+            Table customerTable = new Table(new float[]{1});
+            customerTable.setWidth(com.itextpdf.layout.properties.UnitValue.createPercentValue(100));
+            Cell customerCell = new Cell().setBorder(new SolidBorder(primaryColor, 1)).setPadding(10);
+            customerCell.add(new Paragraph("DATOS DEL COMPRADOR").setBold().setFontColor(primaryColor));
+            if (venta.getCliente() == null) {
+                customerCell.add(new Paragraph("Venta general - no se registraron datos del comprador."));
+            } else {
+                com.mycompany.senati_zapato.modelos.Cliente cliente = venta.getCliente();
+                customerCell.add(new Paragraph(cliente.getTipoDocumento() + ": " + cliente.getNumeroDocumento()
+                        + "   |   " + cliente.getNombres()));
+                String contacto = cliente.getTelefono();
+                if (!cliente.getCorreo().isBlank()) {
+                    contacto += (contacto.isBlank() ? "" : "   |   ") + cliente.getCorreo();
+                }
+                if (!contacto.isBlank()) {
+                    customerCell.add(new Paragraph(contacto));
+                }
+            }
+            customerTable.addCell(customerCell);
+            document.add(customerTable);
+
             document.add(new Paragraph("\n"));
 
             // --- TABLA DE DETALLES ---

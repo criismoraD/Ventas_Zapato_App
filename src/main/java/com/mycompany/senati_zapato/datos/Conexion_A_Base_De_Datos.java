@@ -88,7 +88,19 @@ public class Conexion_A_Base_De_Datos {
                 "vuelto REAL DEFAULT 0.0," +
                 "referencia TEXT DEFAULT ''," +
                 "estado_pago TEXT DEFAULT 'PENDIENTE_VERIFICACION'," +
-                "terminal_id TEXT DEFAULT '')";
+                "terminal_id TEXT DEFAULT ''," +
+                "cliente_id INTEGER NULL," +
+                "FOREIGN KEY (cliente_id) REFERENCES clientes(id))";
+
+        String sqlClientes = "CREATE TABLE IF NOT EXISTS clientes (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "tipo_documento TEXT NOT NULL," +
+                "numero_documento TEXT NOT NULL UNIQUE," +
+                "nombres TEXT NOT NULL," +
+                "telefono TEXT DEFAULT ''," +
+                "correo TEXT DEFAULT ''," +
+                "direccion TEXT DEFAULT ''," +
+                "fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP)";
 
         String sqlDetalles = "CREATE TABLE IF NOT EXISTS detalles_venta (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -102,6 +114,7 @@ public class Conexion_A_Base_De_Datos {
 
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(sqlProductos);
+            stmt.execute(sqlClientes);
             stmt.execute(sqlVentas);
             stmt.execute(sqlDetalles);
 
@@ -126,6 +139,7 @@ public class Conexion_A_Base_De_Datos {
             agregarColumnaSiNoExiste(stmt, "ventas", "referencia TEXT DEFAULT ''");
             agregarColumnaSiNoExiste(stmt, "ventas", "estado_pago TEXT DEFAULT 'PENDIENTE_VERIFICACION'");
             agregarColumnaSiNoExiste(stmt, "ventas", "terminal_id TEXT DEFAULT ''");
+            agregarColumnaSiNoExiste(stmt, "ventas", "cliente_id INTEGER NULL");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_metodo_referencia " +
                     "ON ventas(metodo_pago, referencia) WHERE trim(referencia) <> ''");
 

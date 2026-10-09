@@ -257,8 +257,11 @@ public class Servicio_De_Gemini {
         "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
         "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
         "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
-        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago y guía el cobro en modo asistido: anuncia el total, " +
-        "indica que debe elegir el método, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +
+        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago y guía el cobro en modo asistido respetando exactamente el orden visual: " +
+        "primero anuncia que para completar la venta debe registrar los datos del comprador o elegir venta general; " +
+        "pregunta «¿Desea registrar los datos del comprador?» y, si acepta, solicita «Indíqueme el número de DNI» (o RUC si corresponde), " +
+        "pide completar nombres y los demás campos, y confirma que los datos quedaron listos; si elige venta general, confirma que se omitirá el registro; " +
+        "solo después indica que debe elegir el método de pago, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +
         "nunca afirmes que el pago ya fue realizado hasta que el sistema confirme la venta. Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
         "Si el usuario pide activar o desactivar el modo oscuro, modo noche o modo claro, usa la herramienta cambiar_modo_oscuro.";
 

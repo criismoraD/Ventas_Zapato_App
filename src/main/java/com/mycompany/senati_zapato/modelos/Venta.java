@@ -22,6 +22,7 @@ public class Venta {
     private String referencia;
     private String estadoPago;
     private String terminalId;
+    private Cliente cliente;
 
     public Venta() {
         this.detalles = new ArrayList<>();
@@ -66,4 +67,7 @@ public class Venta {
 
     public String getTerminalId() { return terminalId; }
     public void setTerminalId(String terminalId) { this.terminalId = terminalId; }
+
+    public Cliente getCliente() { return cliente; }
+    public void setCliente(Cliente cliente) { this.cliente = cliente; }
 }

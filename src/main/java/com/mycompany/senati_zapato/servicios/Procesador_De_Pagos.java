@@ -56,7 +56,7 @@ public class Procesador_De_Pagos {
             }
 
             // 2. Insertar venta principal con los campos extendidos
-            String sqlVenta = "INSERT INTO ventas(cajero, monto_total, estado, metodo_pago, monto_recibido, vuelto, referencia, estado_pago, terminal_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sqlVenta = "INSERT INTO ventas(cajero, monto_total, estado, metodo_pago, monto_recibido, vuelto, referencia, estado_pago, terminal_id, cliente_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             int ventaId = 0;
             try (PreparedStatement pstmtVenta = conn.prepareStatement(sqlVenta, Statement.RETURN_GENERATED_KEYS)) {
                 pstmtVenta.setString(1, venta.Get_Cajero());
@@ -68,6 +68,11 @@ public class Procesador_De_Pagos {
                 pstmtVenta.setString(7, venta.getReferencia());
                 pstmtVenta.setString(8, venta.getEstadoPago());
                 pstmtVenta.setString(9, venta.getTerminalId());
+                if (venta.getCliente() == null) {
+                    pstmtVenta.setNull(10, Types.INTEGER);
+                } else {
+                    pstmtVenta.setInt(10, venta.getCliente().getId());
+                }
                 
                 pstmtVenta.executeUpdate();
                 

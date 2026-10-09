@@ -14,7 +14,9 @@ public class Dao_De_Venta {
 
     public List<Venta> Obtener_Ventas_Recientes(int limite) {
         List<Venta> lista = new ArrayList<>();
-        String sql = "SELECT * FROM ventas ORDER BY fecha_hora DESC LIMIT ?";
+        String sql = "SELECT v.*, c.tipo_documento, c.numero_documento, c.nombres, c.telefono, c.correo, c.direccion " +
+                "FROM ventas v LEFT JOIN clientes c ON v.cliente_id = c.id " +
+                "ORDER BY v.fecha_hora DESC LIMIT ?";
         try (Connection conn = Conexion_A_Base_De_Datos.Get_Conexion();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, limite);
@@ -49,6 +51,17 @@ public class Dao_De_Venta {
                     String terminalId = "";
                     try { terminalId = rs.getString("terminal_id"); } catch (Exception e) {}
                     v.setTerminalId(terminalId);
+                    if (rs.getString("numero_documento") != null) {
+                        Cliente cliente = new Cliente();
+                        cliente.setId(rs.getInt("cliente_id"));
+                        cliente.setTipoDocumento(rs.getString("tipo_documento"));
+                        cliente.setNumeroDocumento(rs.getString("numero_documento"));
+                        cliente.setNombres(rs.getString("nombres"));
+                        cliente.setTelefono(rs.getString("telefono"));
+                        cliente.setCorreo(rs.getString("correo"));
+                        cliente.setDireccion(rs.getString("direccion"));
+                        v.setCliente(cliente);
+                    }
 
                     lista.add(v);
                 }

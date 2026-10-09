@@ -808,7 +808,10 @@ public class Panel_De_Ventas extends JPanel {
         SwingUtilities.invokeLater(this::procesarVenta);
         return String.format(
                 "Se procede a realizar el cobro por un total de S/ %.2f. "
-                + "En el panel de pago, selecciona el método, completa los datos solicitados "
+                + "Para completar la venta, ¿desea registrar los datos del comprador? "
+                + "Complete el DNI o RUC, nombres y los demás campos solicitados; luego confirme los datos. "
+                + "Si no desea registrarlos, elija «Venta general» para omitir este paso. "
+                + "Después, seleccione el método de pago, complete los datos solicitados "
                 + "y pulsa «CONFIRMAR E INTEGRAR VENTA» después de verificar el pago. "
                 + "La venta solo quedará registrada cuando la confirmes.", total);
     }
@@ -1021,7 +1024,19 @@ public class Panel_De_Ventas extends JPanel {
         Window ancestor = SwingUtilities.getWindowAncestor(this);
         Frame parentFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
 
-        // Abrir panel modal de Pago
+        Dialogo_De_Comprador compradorDialog = new Dialogo_De_Comprador(parentFrame);
+        compradorDialog.setVisible(true);
+        if (!compradorDialog.continuar()) {
+            return;
+        }
+        venta.setCliente(compradorDialog.getCliente());
+
+        // Abrir el pago después de que Swing termine de retirar el diálogo anterior.
+        // Esto evita que la segunda ventana quede detrás del formulario del comprador.
+        SwingUtilities.invokeLater(() -> mostrarDialogoDePago(parentFrame, venta));
+    }
+
+    private void mostrarDialogoDePago(Frame parentFrame, Venta venta) {
         Dialogo_De_Pago pagoDialog = new Dialogo_De_Pago(parentFrame, venta);
         pagoDialog.setVisible(true);
 

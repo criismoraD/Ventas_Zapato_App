@@ -12,6 +12,8 @@ import com.google.genai.types.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.sound.sampled.*;
@@ -25,7 +27,7 @@ public class Servicio_De_Voz_En_Vivo {
             return com.mycompany.senati_zapato.utilidades.Configuracion.MODELO_VOZ_PRINCIPAL;
         }
     }
-    private static final AudioFormat MIC_FORMAT = new AudioFormat(16000f, 16, 1, true, false);
+    private static final AudioFormat MIC_FORMAT_PREFERIDO = new AudioFormat(16000f, 16, 1, true, false);
     private static final AudioFormat OUT_FORMAT = new AudioFormat(24000f, 16, 1, true, false);
     private static final int CHUNK_SIZE = 1024;
 
@@ -40,8 +42,11 @@ public class Servicio_De_Voz_En_Vivo {
     private Client client;
     private AsyncSession session;
     private TargetDataLine micLine;
+    private AudioFormat micFormat;
     private SourceDataLine speakerLine;
     private Thread micThread;
+    private Thread speakerThread;
+    private final BlockingQueue<byte[]> audioQueue = new LinkedBlockingQueue<>();
 
     public Servicio_De_Voz_En_Vivo(Panel_Principal frame, Consumer<String> onStatus,
                             Consumer<String> onUserText, Consumer<String> onAssistantText) {
@@ -142,13 +147,56 @@ public class Servicio_De_Voz_En_Vivo {
     }
 
     private void openAudio() throws LineUnavailableException {
-        micLine = AudioSystem.getTargetDataLine(MIC_FORMAT);
-        micLine.open(MIC_FORMAT);
+        micLine = abrirMicrofonoCompatible();
         micLine.start();
 
         speakerLine = AudioSystem.getSourceDataLine(OUT_FORMAT);
-        speakerLine.open(OUT_FORMAT);
+        speakerLine.open(OUT_FORMAT, 24000);
         speakerLine.start();
+        startSpeakerLoop();
+    }
+
+    private void startSpeakerLoop() {
+        speakerThread = new Thread(() -> {
+            try {
+                while (running.get() && speakerLine != null) {
+                    byte[] data = audioQueue.take();
+                    if (speakerLine != null) {
+                        speakerLine.write(data, 0, data.length);
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "gemini-live-speaker");
+        speakerThread.start();
+    }
+
+    private TargetDataLine abrirMicrofonoCompatible() throws LineUnavailableException {
+        AudioFormat[] candidatos = {
+            MIC_FORMAT_PREFERIDO,
+            new AudioFormat(44100f, 16, 1, true, false),
+            new AudioFormat(48000f, 16, 1, true, false),
+            new AudioFormat(44100f, 16, 2, true, false),
+            new AudioFormat(48000f, 16, 2, true, false)
+        };
+        for (AudioFormat candidato : candidatos) {
+            TargetDataLine linea = null;
+            try {
+                linea = AudioSystem.getTargetDataLine(candidato);
+                linea.open(candidato);
+                micFormat = candidato;
+                if (!candidato.matches(MIC_FORMAT_PREFERIDO)) {
+                    status("Micrófono ajustado a " + (int) candidato.getSampleRate() + " Hz.");
+                }
+                return linea;
+            } catch (LineUnavailableException | IllegalArgumentException ex) {
+                if (linea != null) {
+                    linea.close();
+                }
+            }
+        }
+        throw new LineUnavailableException("El micrófono no admite un formato PCM compatible.");
     }
 
     private void startMicLoop() {
@@ -163,7 +211,7 @@ public class Servicio_De_Voz_En_Vivo {
                     }
                     byte[] audio = java.util.Arrays.copyOf(buffer, read);
                     session.sendRealtimeInput(LiveSendRealtimeInputParameters.builder()
-                            .audio(Blob.builder().mimeType("audio/pcm;rate=16000").data(audio))
+                            .audio(Blob.builder().mimeType("audio/pcm;rate=" + (int) micFormat.getSampleRate()).data(audio))
                             .build());
                 }
             }
@@ -201,6 +249,7 @@ public class Servicio_De_Voz_En_Vivo {
             });
             content.interrupted().ifPresent(interrupted -> {
                 if (interrupted && speakerLine != null) {
+                    audioQueue.clear();
                     speakerLine.flush();
                     modelSpeaking.set(false);
                 }
@@ -212,7 +261,7 @@ public class Servicio_De_Voz_En_Vivo {
                             // Modelo está hablando → silenciar micrófono
                             modelSpeaking.set(true);
                             byte[] data = blob.data().get();
-                            speakerLine.write(data, 0, data.length);
+                            audioQueue.offer(data);
                         }
                     });
                     // REMOVIDO: part.text().ifPresent(onAssistantText)
@@ -329,6 +378,11 @@ public class Servicio_De_Voz_En_Vivo {
     }
 
     private void closeAudio() {
+        audioQueue.clear();
+        if (speakerThread != null) {
+            speakerThread.interrupt();
+            speakerThread = null;
+        }
         try {
             if (micLine != null) {
                 micLine.stop();
@@ -337,7 +391,6 @@ public class Servicio_De_Voz_En_Vivo {
         } catch (Exception ignored) {}
         try {
             if (speakerLine != null) {
-                speakerLine.drain();
                 speakerLine.stop();
                 speakerLine.close();
             }
