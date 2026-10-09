@@ -15,7 +15,8 @@ public class Dao_De_Venta {
     public List<Venta> Obtener_Ventas_Recientes(int limite) {
         List<Venta> lista = new ArrayList<>();
         String sql = "SELECT * FROM ventas ORDER BY fecha_hora DESC LIMIT ?";
-        try (PreparedStatement pstmt = Conexion_A_Base_De_Datos.Get_Conexion().prepareStatement(sql)) {
+        try (Connection conn = Conexion_A_Base_De_Datos.Get_Conexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, limite);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -42,12 +43,18 @@ public class Dao_De_Venta {
                     String ref = "";
                     try { ref = rs.getString("referencia"); } catch (Exception e) {}
                     v.setReferencia(ref);
+                    String estadoPago = "CONFIRMADO_MANUALMENTE";
+                    try { estadoPago = rs.getString("estado_pago"); } catch (Exception e) {}
+                    v.setEstadoPago(estadoPago);
+                    String terminalId = "";
+                    try { terminalId = rs.getString("terminal_id"); } catch (Exception e) {}
+                    v.setTerminalId(terminalId);
 
                     lista.add(v);
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener ventas recientes: " + e.getMessage());
+            throw new PersistenciaException("No se pudieron obtener las ventas recientes.", e);
         }
         return lista;
     }
@@ -58,7 +65,8 @@ public class Dao_De_Venta {
         String sql = "SELECT SUM(monto_total) AS ingresos, COUNT(*) as cantidad FROM ventas WHERE date(fecha_hora) = date('now', 'localtime')";
         String sqlZapatos = "SELECT SUM(dv.cantidad) as total_zapatos FROM detalles_venta dv JOIN ventas v ON dv.venta_id = v.id WHERE date(v.fecha_hora) = date('now', 'localtime')";
         
-        try (Statement stmt = Conexion_A_Base_De_Datos.Get_Conexion().createStatement()) {
+        try (Connection conn = Conexion_A_Base_De_Datos.Get_Conexion();
+             Statement stmt = conn.createStatement()) {
             
             try (ResultSet rs = stmt.executeQuery(sql)) {
                 if (rs.next()) {
@@ -73,7 +81,7 @@ public class Dao_De_Venta {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener KPIs: " + e.getMessage());
+            throw new PersistenciaException("No se pudieron obtener los indicadores del día.", e);
         }
         return kpis;
     }
@@ -85,7 +93,8 @@ public class Dao_De_Venta {
                      "JOIN productos p ON dv.producto_id = p.id " +
                      "GROUP BY dv.producto_id " +
                      "ORDER BY total_vendido DESC LIMIT ?";
-        try (PreparedStatement pstmt = Conexion_A_Base_De_Datos.Get_Conexion().prepareStatement(sql)) {
+        try (Connection conn = Conexion_A_Base_De_Datos.Get_Conexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, limite);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -98,7 +107,7 @@ public class Dao_De_Venta {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener top productos: " + e.getMessage());
+            throw new PersistenciaException("No se pudieron obtener los productos más vendidos.", e);
         }
         return lista;
     }
@@ -110,7 +119,8 @@ public class Dao_De_Venta {
                      "WHERE date(fecha_hora) >= date('now', 'localtime', '-6 days') " +
                      "GROUP BY date(fecha_hora) " +
                      "ORDER BY date(fecha_hora) ASC";
-        try (Statement stmt = Conexion_A_Base_De_Datos.Get_Conexion().createStatement();
+        try (Connection conn = Conexion_A_Base_De_Datos.Get_Conexion();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 lista.add(new Object[]{
@@ -119,7 +129,7 @@ public class Dao_De_Venta {
                 });
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener ventas de últimos 7 días: " + e.getMessage());
+            throw new PersistenciaException("No se pudieron obtener las ventas de los últimos 7 días.", e);
         }
         return lista;
     }
@@ -130,7 +140,8 @@ public class Dao_De_Venta {
                      "FROM detalles_venta dv " +
                      "JOIN productos p ON dv.producto_id = p.id " +
                      "WHERE dv.venta_id = ?";
-        try (PreparedStatement pstmt = Conexion_A_Base_De_Datos.Get_Conexion().prepareStatement(sql)) {
+        try (Connection conn = Conexion_A_Base_De_Datos.Get_Conexion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, ventaId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -143,7 +154,7 @@ public class Dao_De_Venta {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener detalles de venta: " + e.getMessage());
+            throw new PersistenciaException("No se pudieron obtener los detalles de la venta " + ventaId + ".", e);
         }
         return detalles;
     }

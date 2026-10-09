@@ -72,6 +72,7 @@ public class Generador_De_Pdf {
             rightInfo.add(new Paragraph("Cajero: " + venta.Get_Cajero()));
             rightInfo.add(new Paragraph("Método: " + (venta.Get_Metodo_Pago() != null ? venta.Get_Metodo_Pago() : "Efectivo")));
             rightInfo.add(new Paragraph("Estado: " + venta.Get_Estado()));
+            rightInfo.add(new Paragraph("Estado del pago: " + venta.getEstadoPago()));
 
             infoTable.addCell(leftInfo);
             infoTable.addCell(rightInfo);
@@ -150,6 +151,10 @@ public class Generador_De_Pdf {
             } else if (venta.getReferencia() != null && !venta.getReferencia().isEmpty()) {
                 boxTotal.addCell(new Cell().add(new Paragraph("Ref / Operación:")).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT).setFontSize(10));
                 boxTotal.addCell(new Cell().add(new Paragraph(venta.getReferencia())).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT).setFontSize(10));
+                if (venta.getTerminalId() != null && !venta.getTerminalId().isEmpty()) {
+                    boxTotal.addCell(new Cell().add(new Paragraph("Terminal POS:")).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT).setFontSize(10));
+                    boxTotal.addCell(new Cell().add(new Paragraph(venta.getTerminalId())).setBorder(Border.NO_BORDER).setPadding(2).setTextAlignment(TextAlignment.RIGHT).setFontSize(10));
+                }
             }
             
             finalTotalLayout.addCell(new Cell().add(boxTotal).setBorder(new SolidBorder(primaryColor, 2)).setBackgroundColor(lightBg).setPadding(5));

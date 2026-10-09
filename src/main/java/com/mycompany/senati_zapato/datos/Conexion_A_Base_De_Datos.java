@@ -10,84 +10,62 @@ public class Conexion_A_Base_De_Datos {
     private static final String APP_DIR = System.getProperty("user.dir") + java.io.File.separator + "Datos_SenatiZapato";
     private static final String OLD_APP_DIR = System.getProperty("user.home") + java.io.File.separator + "SenatiZapato";
     private static final String DB_URL = "jdbc:sqlite:" + APP_DIR + java.io.File.separator + "senati_zapato.db";
-    private static Connection connection;
+    private static boolean databaseInitialized;
 
     private Conexion_A_Base_De_Datos() {}
 
     public static synchronized Connection Get_Conexion() throws SQLException {
-        if (connection == null || connection.isClosed()) {
+        if (!databaseInitialized) {
             java.io.File appDirFile = new java.io.File(APP_DIR);
             if (!appDirFile.exists()) {
-                appDirFile.mkdirs();
+                if (!appDirFile.mkdirs() && !appDirFile.exists()) {
+                    throw new SQLException("No se pudo crear el directorio de datos: " + APP_DIR);
+                }
             }
             java.io.File dbFile = new java.io.File(APP_DIR, "senati_zapato.db");
-            
-            // 1. Intentar migrar desde la raíz del proyecto
-            java.io.File rootDb = new java.io.File(System.getProperty("user.dir"), "senati_zapato.db");
-            if (rootDb.exists()) {
-                boolean shouldMigrate = false;
-                if (!dbFile.exists()) {
-                    shouldMigrate = true;
-                } else {
-                    // Si ya existe la DB portable, pero la de la raíz tiene más productos o ventas, migrarla para no perder datos
-                    try {
-                        int rootProducts = obtenerCountTablas("jdbc:sqlite:" + rootDb.getAbsolutePath(), "productos");
-                        int portableProducts = obtenerCountTablas("jdbc:sqlite:" + dbFile.getAbsolutePath(), "productos");
-                        int rootVentas = obtenerCountTablas("jdbc:sqlite:" + rootDb.getAbsolutePath(), "ventas");
-                        int portableVentas = obtenerCountTablas("jdbc:sqlite:" + dbFile.getAbsolutePath(), "ventas");
-                        
-                        if (rootProducts > portableProducts || rootVentas > portableVentas) {
-                            shouldMigrate = true;
-                        }
-                    } catch (Exception e) {
-                        // Fallback a comparar tamaño
-                        try {
-                            if (rootDb.length() > dbFile.length()) {
-                                shouldMigrate = true;
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                }
 
-                if (shouldMigrate) {
-                    try {
-                        if (dbFile.exists()) {
-                            // Crear un backup por seguridad de la base de datos portable existente
-                            java.io.File backup = new java.io.File(APP_DIR, "senati_zapato_backup_" + System.currentTimeMillis() + ".db");
-                            java.nio.file.Files.copy(dbFile.toPath(), backup.toPath());
-                        }
-                        java.nio.file.Files.copy(rootDb.toPath(), dbFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                        System.out.println("Base de datos de la raíz del proyecto migrada a la versión portable.");
-                    } catch (java.io.IOException ex) {
-                        ex.printStackTrace();
-                    }
-                }
+            // Solo migrar una base alternativa cuando la base portable aún no existe.
+            java.io.File rootDb = new java.io.File(System.getProperty("user.dir"), "senati_zapato.db");
+            if (!dbFile.exists() && rootDb.exists()) {
+                copiarBaseDeDatos(rootDb, dbFile, "la raíz del proyecto");
             }
 
-            // 2. Si aún no existe la DB portable, intentar desde user.home
+            // Si aún no existe la DB portable, intentar desde user.home.
             if (!dbFile.exists()) {
                 java.io.File oldDb = new java.io.File(OLD_APP_DIR, "senati_zapato.db");
                 if (oldDb.exists()) {
-                    try {
-                        java.nio.file.Files.copy(oldDb.toPath(), dbFile.toPath());
-                        System.out.println("Base de datos migrada desde user.home a la versión portable.");
-                    } catch (java.io.IOException ex) {
-                        ex.printStackTrace();
-                    }
+                    copiarBaseDeDatos(oldDb, dbFile, "user.home");
                 }
             }
             try {
                 Class.forName("org.sqlite.JDBC");
-            } catch (ClassNotFoundException e) {
-                System.err.println("Driver SQLite JDBC no encontrado: " + e.getMessage());
+                try (Connection initialConnection = DriverManager.getConnection(DB_URL)) {
+                    Inicializar_Base_De_Datos(initialConnection);
+                }
+                databaseInitialized = true;
             }
-            connection = DriverManager.getConnection(DB_URL);
-            Inicializar_Base_De_Datos();
+            catch (ClassNotFoundException e) {
+                throw new SQLException("Driver SQLite JDBC no encontrado.", e);
+            }
         }
-        return connection;
+        Connection newConnection = DriverManager.getConnection(DB_URL);
+        try (Statement stmt = newConnection.createStatement()) {
+            stmt.execute("PRAGMA foreign_keys = ON");
+            stmt.execute("PRAGMA busy_timeout = 5000");
+        }
+        return newConnection;
     }
 
-    private static void Inicializar_Base_De_Datos() {
+    private static void copiarBaseDeDatos(java.io.File origen, java.io.File destino, String descripcion) throws SQLException {
+        try {
+            java.nio.file.Files.copy(origen.toPath(), destino.toPath());
+            System.out.println("Base de datos migrada desde " + descripcion + ".");
+        } catch (java.io.IOException ex) {
+            throw new SQLException("No se pudo migrar la base de datos desde " + descripcion + ".", ex);
+        }
+    }
+
+    private static void Inicializar_Base_De_Datos(Connection connection) throws SQLException {
         String sqlProductos = "CREATE TABLE IF NOT EXISTS productos (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "codigo TEXT UNIQUE NOT NULL," +
@@ -108,7 +86,9 @@ public class Conexion_A_Base_De_Datos {
                 "metodo_pago TEXT DEFAULT 'Efectivo'," +
                 "monto_recibido REAL DEFAULT 0.0," +
                 "vuelto REAL DEFAULT 0.0," +
-                "referencia TEXT DEFAULT '')";
+                "referencia TEXT DEFAULT ''," +
+                "estado_pago TEXT DEFAULT 'PENDIENTE_VERIFICACION'," +
+                "terminal_id TEXT DEFAULT '')";
 
         String sqlDetalles = "CREATE TABLE IF NOT EXISTS detalles_venta (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -125,10 +105,9 @@ public class Conexion_A_Base_De_Datos {
             stmt.execute(sqlVentas);
             stmt.execute(sqlDetalles);
 
-            // Migrar productos existentes si es necesario
-            try { stmt.execute("ALTER TABLE productos ADD COLUMN tallas TEXT DEFAULT ''"); } catch (SQLException e) {}
-            try { stmt.execute("ALTER TABLE productos ADD COLUMN url_imagen TEXT DEFAULT ''"); } catch (SQLException e) {}
-            try { stmt.execute("ALTER TABLE productos ADD COLUMN estado TEXT DEFAULT 'Disponible'"); } catch (SQLException e) {}
+            agregarColumnaSiNoExiste(stmt, "productos", "tallas TEXT DEFAULT ''");
+            agregarColumnaSiNoExiste(stmt, "productos", "url_imagen TEXT DEFAULT ''");
+            agregarColumnaSiNoExiste(stmt, "productos", "estado TEXT DEFAULT 'Disponible'");
 
             // Asignar imágenes a productos existentes que no tienen una
             stmt.execute("UPDATE productos SET url_imagen = 'https://picsum.photos/400?random=1' WHERE codigo = 'P001' AND (url_imagen IS NULL OR url_imagen = '')");
@@ -141,15 +120,26 @@ public class Conexion_A_Base_De_Datos {
             stmt.execute("UPDATE productos SET url_imagen = 'https://picsum.photos/400?random=8' WHERE codigo = 'P008' AND (url_imagen IS NULL OR url_imagen = '')");
             stmt.execute("UPDATE productos SET url_imagen = 'https://picsum.photos/400?random=9' WHERE codigo = 'P009' AND (url_imagen IS NULL OR url_imagen = '')");
 
-            // Migrar ventas existentes si es necesario
-            try { stmt.execute("ALTER TABLE ventas ADD COLUMN metodo_pago TEXT DEFAULT 'Efectivo'"); } catch (SQLException e) {}
-            try { stmt.execute("ALTER TABLE ventas ADD COLUMN monto_recibido REAL DEFAULT 0.0"); } catch (SQLException e) {}
-            try { stmt.execute("ALTER TABLE ventas ADD COLUMN vuelto REAL DEFAULT 0.0"); } catch (SQLException e) {}
-            try { stmt.execute("ALTER TABLE ventas ADD COLUMN referencia TEXT DEFAULT ''"); } catch (SQLException e) {}
+            agregarColumnaSiNoExiste(stmt, "ventas", "metodo_pago TEXT DEFAULT 'Efectivo'");
+            agregarColumnaSiNoExiste(stmt, "ventas", "monto_recibido REAL DEFAULT 0.0");
+            agregarColumnaSiNoExiste(stmt, "ventas", "vuelto REAL DEFAULT 0.0");
+            agregarColumnaSiNoExiste(stmt, "ventas", "referencia TEXT DEFAULT ''");
+            agregarColumnaSiNoExiste(stmt, "ventas", "estado_pago TEXT DEFAULT 'PENDIENTE_VERIFICACION'");
+            agregarColumnaSiNoExiste(stmt, "ventas", "terminal_id TEXT DEFAULT ''");
+            stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_metodo_referencia " +
+                    "ON ventas(metodo_pago, referencia) WHERE trim(referencia) <> ''");
 
             seedData(stmt);
+        }
+    }
+
+    private static void agregarColumnaSiNoExiste(Statement stmt, String tabla, String definicion) throws SQLException {
+        try {
+            stmt.execute("ALTER TABLE " + tabla + " ADD COLUMN " + definicion);
         } catch (SQLException e) {
-            System.err.println("Error inicializando la base de datos: " + e.getMessage());
+            if (!e.getMessage().toLowerCase().contains("duplicate column name")) {
+                throw e;
+            }
         }
     }
 
@@ -174,14 +164,4 @@ public class Conexion_A_Base_De_Datos {
         }
     }
 
-    private static int obtenerCountTablas(String jdbcUrl, String tabla) {
-        try (Connection conn = DriverManager.getConnection(jdbcUrl);
-             Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tabla)) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-        } catch (Exception ignored) {}
-        return 0;
-    }
 }

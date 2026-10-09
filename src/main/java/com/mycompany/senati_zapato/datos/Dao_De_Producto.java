@@ -33,7 +33,7 @@ public class Dao_De_Producto {
                 lista.add(mapRowToProducto(rs));
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener productos: " + e.getMessage());
+            throw new PersistenciaException("No se pudieron obtener los productos.", e);
         }
         return lista;
     }
@@ -49,7 +49,7 @@ public class Dao_De_Producto {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error al obtener producto por id: " + e.getMessage());
+            throw new PersistenciaException("No se pudo obtener el producto con ID " + id + ".", e);
         }
         return null;
     }
@@ -68,7 +68,7 @@ public class Dao_De_Producto {
             pstmt.setString(8, producto.Get_Estado());
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error al insertar producto: " + e.getMessage());
+            throw new PersistenciaException("No se pudo insertar el producto.", e);
         }
     }
 
@@ -87,7 +87,7 @@ public class Dao_De_Producto {
             pstmt.setInt(9, producto.Get_Id());
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error al actualizar producto: " + e.getMessage());
+            throw new PersistenciaException("No se pudo actualizar el producto con ID " + producto.Get_Id() + ".", e);
         }
     }
 
@@ -98,7 +98,7 @@ public class Dao_De_Producto {
             pstmt.setInt(1, id);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error al eliminar producto: " + e.getMessage());
+            throw new PersistenciaException("No se pudo eliminar el producto con ID " + id + ".", e);
         }
     }
 
@@ -110,7 +110,7 @@ public class Dao_De_Producto {
             pstmt.setInt(2, id);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error al actualizar stock: " + e.getMessage());
+            throw new PersistenciaException("No se pudo actualizar el stock del producto con ID " + id + ".", e);
         }
     }
 

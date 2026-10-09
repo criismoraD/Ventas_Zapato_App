@@ -4,10 +4,10 @@ Este documento describe cómo preparar, empaquetar y desplegar la aplicación de
 
 ## Análisis de la Estructura Actual
 
-El proyecto es una aplicación de escritorio desarrollada en **Java 22** con interfaz gráfica usando **Java Swing** y el tema **FlatLaf**. Utiliza **Maven** para la gestión de dependencias y una base de datos local **SQLite** (`senati_zapato.db`).
+El proyecto es una aplicación de escritorio desarrollada en **Java 21** con interfaz gráfica usando **Java Swing** y el tema **FlatLaf**. Utiliza **Maven** para la gestión de dependencias y una base de datos local **SQLite** (`senati_zapato.db`).
 
 ## Requisitos Previos
-- **Java Development Kit (JDK) 22** o superior instalado.
+- **Java Development Kit (JDK) 21** o superior instalado.
 - **Apache Maven** instalado.
 - Sistema Operativo: Entorno compatible con Java (Windows, Linux, macOS), aunque el instalador se orientará a Windows.
 
@@ -22,16 +22,15 @@ mvn clean compile exec:java
 ```
 
 ### Opción 2: Empaquetado en un "Fat JAR" (Distribución Simple)
-Actualmente, el `pom.xml` genera un JAR estándar que no incluye las librerías externas (`flatlaf` y `sqlite-jdbc`). Para facilitar la distribución en un único archivo ejecutable, se recomienda configurar el `maven-assembly-plugin`.
+El `pom.xml` configura `maven-assembly-plugin` para generar un JAR con las dependencias incluidas.
 
 **Pasos:**
-1. (Si no está configurado) Agregar `maven-assembly-plugin` en la sección `<build>` del `pom.xml`.
-2. Compilar el ejecutable:
+1. Compilar el ejecutable:
    ```bash
    mvn clean compile assembly:single
    ```
-3. El archivo resultante (ej: `SENATI_ZAPATO-1.0-SNAPSHOT-jar-with-dependencies.jar`) se generará en la carpeta `target/`.
-4. El usuario final puede ejecutarlo desde la terminal:
+2. El archivo resultante (ej: `SENATI_ZAPATO-1.0-SNAPSHOT-jar-with-dependencies.jar`) se generará en la carpeta `target/`.
+3. El usuario final puede ejecutarlo desde la terminal:
    ```bash
    java -jar target/SENATI_ZAPATO-1.0-SNAPSHOT-jar-with-dependencies.jar
    ```
@@ -41,7 +40,7 @@ Para una experiencia profesional en sistemas Windows (el SO objetivo predominant
 
 **Pasos Generales:**
 1. Construir el proyecto y obtener el JAR con sus dependencias (Fat JAR).
-2. Ejecutar la herramienta `jpackage` (incluida en el JDK 22):
+2. Ejecutar la herramienta `jpackage` (incluida en el JDK 21):
    ```bash
    jpackage --type exe \
             --name "SenatiZapato" \
@@ -59,5 +58,6 @@ Para una experiencia profesional en sistemas Windows (el SO objetivo predominant
 
 La persistencia de la aplicación se maneja mediante SQLite de manera local.
 
-- **Con un Fat JAR**: El archivo `.db` debe acompañar al `.jar` en el mismo directorio si la conexión JDBC apunta a una ruta relativa (`jdbc:sqlite:senati_zapato.db`).
-- **Con un instalador nativo**: Es recomendable modificar la ruta de conexión a SQLite en el código fuente para apuntar al directorio de datos de la aplicación del usuario (ej. `System.getenv("APPDATA") + "\\SenatiZapato\\senati_zapato.db"`) de forma que el programa tenga permisos de escritura garantizados. En el primer inicio, si el archivo de base de datos no existe, la aplicación debe estar programada para crearlo con la estructura de tablas inicial.
+- La aplicación usa `Datos_SenatiZapato\\senati_zapato.db` relativo al directorio de ejecución.
+- Si no existe esa base, en el primer inicio puede migrar una copia desde la raíz del proyecto o desde `%USERPROFILE%\\SenatiZapato`.
+- Cuando la base portable ya existe, no se sobrescribe automáticamente con otra copia. Esto evita perder ventas o cambios del inventario.

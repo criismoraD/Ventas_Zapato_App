@@ -7,6 +7,8 @@ import com.mycompany.senati_zapato.servicios.*;
 import com.mycompany.senati_zapato.utilidades.*;
 
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Procesador_De_Pagos {
     
@@ -20,11 +22,13 @@ public class Procesador_De_Pagos {
      * @return true si la transacción se completó con éxito, false en caso contrario.
      */
     public static boolean Procesar_Pago(Venta venta, String metodoPago, double montoRecibido, double vuelto, String referencia) {
+        validarPago(venta, metodoPago, montoRecibido, vuelto, referencia);
         venta.Set_Metodo_Pago(metodoPago);
         venta.setMontoRecibido(montoRecibido);
         venta.setVuelto(vuelto);
         venta.setReferencia(referencia);
         venta.Set_Estado("Completado");
+        venta.setEstadoPago("CONFIRMADO_MANUALMENTE");
 
         Connection conn = null;
         try {
@@ -33,25 +37,26 @@ public class Procesador_De_Pagos {
 
             // 1. Validar stock en la base de datos (concurrencia)
             String sqlCheckStock = "SELECT stock, nombre FROM productos WHERE id = ?";
-            for (Detalle_De_Venta detalle : venta.Get_Detalles()) {
+            Map<Integer, Integer> cantidadesPorProducto = agruparCantidades(venta);
+            for (Map.Entry<Integer, Integer> entrada : cantidadesPorProducto.entrySet()) {
                 try (PreparedStatement pstmtCheck = conn.prepareStatement(sqlCheckStock)) {
-                    pstmtCheck.setInt(1, detalle.Get_Producto_Id());
+                    pstmtCheck.setInt(1, entrada.getKey());
                     try (ResultSet rs = pstmtCheck.executeQuery()) {
                         if (rs.next()) {
                             int stockActual = rs.getInt("stock");
                             String nombre = rs.getString("nombre");
-                            if (stockActual < detalle.Get_Cantidad()) {
-                                throw new SQLException("Stock insuficiente para: " + nombre + " (Disponible: " + stockActual + ", Solicitado: " + detalle.Get_Cantidad() + ")");
+                            if (stockActual < entrada.getValue()) {
+                                throw new SQLException("Stock insuficiente para: " + nombre + " (Disponible: " + stockActual + ", Solicitado: " + entrada.getValue() + ")");
                             }
                         } else {
-                            throw new SQLException("El producto con ID " + detalle.Get_Producto_Id() + " no existe.");
+                            throw new SQLException("El producto con ID " + entrada.getKey() + " no existe.");
                         }
                     }
                 }
             }
 
             // 2. Insertar venta principal con los campos extendidos
-            String sqlVenta = "INSERT INTO ventas(cajero, monto_total, estado, metodo_pago, monto_recibido, vuelto, referencia) VALUES(?, ?, ?, ?, ?, ?, ?)";
+            String sqlVenta = "INSERT INTO ventas(cajero, monto_total, estado, metodo_pago, monto_recibido, vuelto, referencia, estado_pago, terminal_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
             int ventaId = 0;
             try (PreparedStatement pstmtVenta = conn.prepareStatement(sqlVenta, Statement.RETURN_GENERATED_KEYS)) {
                 pstmtVenta.setString(1, venta.Get_Cajero());
@@ -61,6 +66,8 @@ public class Procesador_De_Pagos {
                 pstmtVenta.setDouble(5, venta.getMontoRecibido());
                 pstmtVenta.setDouble(6, venta.getVuelto());
                 pstmtVenta.setString(7, venta.getReferencia());
+                pstmtVenta.setString(8, venta.getEstadoPago());
+                pstmtVenta.setString(9, venta.getTerminalId());
                 
                 pstmtVenta.executeUpdate();
                 
@@ -88,43 +95,88 @@ public class Procesador_De_Pagos {
             }
 
             // 4. Descontar stock y actualizar estado "Agotado" si el stock llega a 0
-            String sqlUpdateStock = "UPDATE productos SET stock = stock - ? WHERE id = ?";
-            String sqlUpdateEstado = "UPDATE productos SET estado = 'Agotado' WHERE id = ? AND stock <= 0";
-            
-            try (PreparedStatement pstmtStock = conn.prepareStatement(sqlUpdateStock);
-                 PreparedStatement pstmtEstado = conn.prepareStatement(sqlUpdateEstado)) {
-                for (Detalle_De_Venta detalle : venta.Get_Detalles()) {
-                    // Descontar
-                    pstmtStock.setInt(1, detalle.Get_Cantidad());
-                    pstmtStock.setInt(2, detalle.Get_Producto_Id());
-                    pstmtStock.executeUpdate();
+            String sqlUpdateStock = "UPDATE productos SET stock = stock - ?, " +
+                    "estado = CASE WHEN stock - ? <= 0 THEN 'Agotado' ELSE estado END " +
+                    "WHERE id = ? AND stock >= ?";
 
-                    // Cambiar a Agotado si stock llega a 0
-                    pstmtEstado.setInt(1, detalle.Get_Producto_Id());
-                    pstmtEstado.executeUpdate();
+            try (PreparedStatement pstmtStock = conn.prepareStatement(sqlUpdateStock)) {
+                for (Map.Entry<Integer, Integer> entrada : cantidadesPorProducto.entrySet()) {
+                    pstmtStock.setInt(1, entrada.getValue());
+                    pstmtStock.setInt(2, entrada.getValue());
+                    pstmtStock.setInt(3, entrada.getKey());
+                    pstmtStock.setInt(4, entrada.getValue());
+                    if (pstmtStock.executeUpdate() != 1) {
+                        throw new SQLException("El stock cambió durante la venta para el producto "
+                                + entrada.getKey() + ".");
+                    }
                 }
             }
 
             conn.commit(); // CONFIRMACIÓN DE LA TRANSACCIÓN (ACID)
             return true;
         } catch (SQLException e) {
-            System.err.println("Transacción abortada. Rollback ejecutado. Motivo: " + e.getMessage());
             if (conn != null) {
                 try {
-                    conn.rollback(); // DESHACER CAMBIOS (ACID)
-                } catch (SQLException ex) {
-                    System.err.println("Error al ejecutar rollback: " + ex.getMessage());
+                    conn.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
                 }
             }
-            throw new RuntimeException(e.getMessage());
+            String mensaje = e.getMessage() != null && e.getMessage().contains("UNIQUE constraint failed")
+                    ? "El código de operación ya fue utilizado para este método de pago."
+                    : "No se pudo procesar el pago. La venta fue revertida.";
+            throw new RuntimeException(mensaje, e);
         } finally {
             if (conn != null) {
                 try {
-                    conn.setAutoCommit(true);
-                } catch (SQLException ex) {
-                    System.err.println("Error al restaurar auto-commit: " + ex.getMessage());
+                    conn.close();
+                } catch (SQLException closeError) {
+                    System.err.println("No se pudo cerrar la conexión de pago: " + closeError.getMessage());
                 }
             }
         }
+    }
+
+    private static void validarPago(Venta venta, String metodoPago, double montoRecibido,
+                double vuelto, String referencia) {
+            if (venta == null || venta.Get_Detalles() == null || venta.Get_Detalles().isEmpty()) {
+                throw new IllegalArgumentException("La venta debe contener al menos un producto.");
+            }
+            if (!Double.isFinite(venta.Get_Monto_Total()) || venta.Get_Monto_Total() <= 0) {
+                throw new IllegalArgumentException("El total de la venta debe ser mayor que cero.");
+            }
+            if (metodoPago == null || metodoPago.isBlank()) {
+                throw new IllegalArgumentException("Debe seleccionar un método de pago.");
+            }
+            if (!Double.isFinite(montoRecibido) || montoRecibido < 0
+                    || !Double.isFinite(vuelto) || vuelto < 0) {
+                throw new IllegalArgumentException("Los importes del pago no son válidos.");
+            }
+            if ("Efectivo".equalsIgnoreCase(metodoPago)) {
+                if (montoRecibido < venta.Get_Monto_Total()) {
+                    throw new IllegalArgumentException("El monto recibido es menor que el total.");
+                }
+                double vueltoEsperado = montoRecibido - venta.Get_Monto_Total();
+                if (Math.abs(vuelto - vueltoEsperado) > 0.01) {
+                    throw new IllegalArgumentException("El vuelto calculado no coincide con el monto recibido.");
+                }
+            } else if (referencia == null || referencia.isBlank()) {
+                throw new IllegalArgumentException("Debe registrar el código de operación o autorización.");
+            }
+            for (Detalle_De_Venta detalle : venta.Get_Detalles()) {
+                if (detalle.Get_Cantidad() <= 0 || detalle.Get_Precio_Unitario() < 0
+                        || !Double.isFinite(detalle.Get_Subtotal())) {
+                    throw new IllegalArgumentException("La venta contiene un detalle inválido.");
+                }
+            }
+
+    }
+
+    private static Map<Integer, Integer> agruparCantidades(Venta venta) {
+        Map<Integer, Integer> cantidades = new HashMap<>();
+        for (Detalle_De_Venta detalle : venta.Get_Detalles()) {
+            cantidades.merge(detalle.Get_Producto_Id(), detalle.Get_Cantidad(), Integer::sum);
+        }
+        return cantidades;
     }
 }

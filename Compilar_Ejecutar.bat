@@ -2,8 +2,20 @@
 REM Compila y ejecuta SENATI_ZAPATO sin depender del PATH global.
 REM Usa el JDK + Maven portables de %USERPROFILE%\devtools
 setlocal
-set "JDK=C:\Users\Lenovo\devtools\jdk-21.0.12.1+1"
+for /d %%D in ("%USERPROFILE%\devtools\jdk-21*") do set "JDK=%%D"
 set "MVN=C:\Users\Lenovo\devtools\apache-maven-3.9.16"
+if not defined JDK (
+    echo ERROR: No se encontro un JDK 21 en "%USERPROFILE%\devtools".
+    echo Ejecuta Instalar_JDK_Maven.bat primero.
+    pause
+    exit /b 1
+)
+if not exist "%MVN%\bin\mvn.cmd" (
+    echo ERROR: No se encontro Maven en "%MVN%".
+    echo Ejecuta Instalar_JDK_Maven.bat primero.
+    pause
+    exit /b 1
+)
 set "JAVA_HOME=%JDK%"
 set "MAVEN_HOME=%MVN%"
 set "PATH=%JDK%\bin;%MVN%\bin;%PATH%"

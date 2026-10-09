@@ -109,7 +109,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
     }
     
     private void configurarModelosDeTabla() {
-        String[] colsTx = {"Fecha/Hora", "Cajero", "Monto", "Estado", "Ver"};
+        String[] colsTx = {"Fecha/Hora", "Cajero", "Método", "Monto", "Estado pago", "Ver"};
         modelTransacciones = new DefaultTableModel(colsTx, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -689,7 +689,8 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         modelTransacciones.setRowCount(0);
         List<Venta> recientes = ventaDAO.Obtener_Ventas_Recientes(4);
         for (Venta v : recientes) {
-            modelTransacciones.addRow(new Object[]{v.getFechaHora(), v.Get_Cajero(), String.format("S/ %.2f", v.Get_Monto_Total()), v.Get_Estado(), v});
+            modelTransacciones.addRow(new Object[]{v.getFechaHora(), v.Get_Cajero(), v.Get_Metodo_Pago(),
+                String.format("S/ %.2f", v.Get_Monto_Total()), v.getEstadoPago(), v});
         }
 
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -697,7 +698,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         
         JTable tableTx = crearTablaEstilizada(modelTransacciones, "Transacciones");
 
-        tableTx.getColumnModel().getColumn(4).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+        tableTx.getColumnModel().getColumn(5).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
             private Icono_Elegante eyeIcon = new Icono_Elegante(Icono_Elegante.Type.EYE, 22, Gestor_De_Temas.getAccentColor());
             @Override
             public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -708,15 +709,15 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
                 return label;
             }
         });
-        tableTx.getColumnModel().getColumn(4).setMaxWidth(60);
+        tableTx.getColumnModel().getColumn(5).setMaxWidth(60);
 
         tableTx.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 int col = tableTx.columnAtPoint(e.getPoint());
                 int row = tableTx.rowAtPoint(e.getPoint());
-                if (row >= 0 && col == 4) {
-                    Venta v = (Venta) modelTransacciones.getValueAt(row, 4);
+                if (row >= 0 && col == 5) {
+                    Venta v = (Venta) modelTransacciones.getValueAt(row, 5);
                     com.mycompany.senati_zapato.utilidades.Generador_De_Pdf.generarComprobante(v);
                 }
             }

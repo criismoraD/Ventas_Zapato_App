@@ -20,11 +20,15 @@ public class Venta {
     private double montoRecibido;
     private double vuelto;
     private String referencia;
+    private String estadoPago;
+    private String terminalId;
 
     public Venta() {
         this.detalles = new ArrayList<>();
         this.metodoPago = "Efectivo";
         this.referencia = "";
+        this.estadoPago = "PENDIENTE_VERIFICACION";
+        this.terminalId = "";
     }
 
     public int Get_Id() { return id; }
@@ -56,4 +60,10 @@ public class Venta {
 
     public String getReferencia() { return referencia; }
     public void setReferencia(String referencia) { this.referencia = referencia; }
+
+    public String getEstadoPago() { return estadoPago; }
+    public void setEstadoPago(String estadoPago) { this.estadoPago = estadoPago; }
+
+    public String getTerminalId() { return terminalId; }
+    public void setTerminalId(String terminalId) { this.terminalId = terminalId; }
 }

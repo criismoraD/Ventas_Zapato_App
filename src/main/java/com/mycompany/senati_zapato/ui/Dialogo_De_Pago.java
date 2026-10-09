@@ -36,6 +36,7 @@ public class Dialogo_De_Pago extends JDialog {
     
     // Campos de Tarjeta
     private JTextField txtRefTarjeta;
+    private JTextField txtTerminalId;
     private JButton btnConfirmarTarjeta;
 
     // Campos Digitales (Yape, Plin, Transferencia)
@@ -418,7 +419,7 @@ public class Dialogo_De_Pago extends JDialog {
         body.add(lblIcon, gbc);
 
         gbc.gridy = 1;
-        JLabel lblNro = new JLabel("Número de Operación / Voucher:");
+        JLabel lblNro = new JLabel("Código de autorización / voucher del POS:");
         lblNro.setFont(new Font("Segoe UI", Font.BOLD, 14));
         body.add(lblNro, gbc);
 
@@ -431,6 +432,21 @@ public class Dialogo_De_Pago extends JDialog {
             new EmptyBorder(5, 10, 5, 10)
         ));
         body.add(txtRefTarjeta, gbc);
+
+        gbc.gridy = 3;
+        JLabel lblTerminal = new JLabel("Identificador del POS (opcional):");
+        lblTerminal.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        body.add(lblTerminal, gbc);
+
+        gbc.gridy = 4;
+        txtTerminalId = new JTextField();
+        txtTerminalId.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        txtTerminalId.setPreferredSize(new Dimension(0, 45));
+        txtTerminalId.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(Gestor_De_Temas.getBorderColor(), 1, true),
+            new EmptyBorder(5, 10, 5, 10)
+        ));
+        body.add(txtTerminalId, gbc);
 
         card.add(body, BorderLayout.CENTER);
 
@@ -461,56 +477,21 @@ public class Dialogo_De_Pago extends JDialog {
         JPanel body = new JPanel(new BorderLayout(0, 15));
         body.setOpaque(false);
 
-        // QR Mockup interactivo
-        JPanel qrMock = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(Gestor_De_Temas.isDarkMode() ? new Color(50, 40, 35) : new Color(245, 240, 235));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
-                
-                // Dibujar líneas simulando un QR
-                int size = 120;
-                int x = (getWidth() - size) / 2;
-                int y = (getHeight() - size) / 2;
-                
-                g2.setColor(Gestor_De_Temas.getTextColor());
-                // Anclas de esquina
-                g2.fillRect(x, y, 30, 30);
-                g2.setColor(Gestor_De_Temas.isDarkMode() ? new Color(50, 40, 35) : new Color(245, 240, 235));
-                g2.fillRect(x + 8, y + 8, 14, 14);
-                g2.setColor(Gestor_De_Temas.getTextColor());
-                g2.fillRect(x + 12, y + 12, 6, 6);
-
-                g2.fillRect(x + size - 30, y, 30, 30);
-                g2.setColor(Gestor_De_Temas.isDarkMode() ? new Color(50, 40, 35) : new Color(245, 240, 235));
-                g2.fillRect(x + size - 22, y + 8, 14, 14);
-                g2.setColor(Gestor_De_Temas.getTextColor());
-                g2.fillRect(x + size - 18, y + 12, 6, 6);
-
-                g2.fillRect(x, y + size - 30, 30, 30);
-                g2.setColor(Gestor_De_Temas.isDarkMode() ? new Color(50, 40, 35) : new Color(245, 240, 235));
-                g2.fillRect(x + 8, y + size - 22, 14, 14);
-                g2.setColor(Gestor_De_Temas.getTextColor());
-                g2.fillRect(x + 12, y + size - 18, 6, 6);
-
-                // Bits aleatorios en el centro
-                g2.fillRect(x + 40, y + 10, 15, 10);
-                g2.fillRect(x + 60, y + 25, 10, 20);
-                g2.fillRect(x + 10, y + 40, 20, 10);
-                g2.fillRect(x + 45, y + 50, 25, 15);
-                g2.fillRect(x + 80, y + 40, 15, 30);
-                g2.fillRect(x + 20, y + 70, 30, 10);
-                g2.fillRect(x + 70, y + 80, 20, 20);
-                g2.fillRect(x + 40, y + 95, 30, 15);
-
-                g2.dispose();
-            }
-        };
-        qrMock.setPreferredSize(new Dimension(0, 170));
-        body.add(qrMock, BorderLayout.NORTH);
+        JPanel qrPanel = new JPanel(new BorderLayout());
+        qrPanel.setOpaque(false);
+        JLabel qrLabel = new JLabel();
+        qrLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        String qrPath = System.getProperty("senati.qr.digital", "");
+        java.io.File qrFile = new java.io.File(qrPath);
+        if (qrFile.isFile()) {
+            qrLabel.setIcon(new ImageIcon(qrPath));
+        } else {
+            qrLabel.setText("QR no configurado. Verifique el pago en la aplicación.");
+            qrLabel.setForeground(Gestor_De_Temas.getTextColor());
+        }
+        qrPanel.add(qrLabel, BorderLayout.CENTER);
+        qrPanel.setPreferredSize(new Dimension(0, 170));
+        body.add(qrPanel, BorderLayout.NORTH);
 
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
         inputPanel.setOpaque(false);
@@ -560,17 +541,35 @@ public class Dialogo_De_Pago extends JDialog {
             }
         } else if (metodoSeleccionado.equals("Tarjeta")) {
             referencia = txtRefTarjeta.getText().trim();
+            if (referencia.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Registre el código de autorización aprobado por el POS.",
+                        "Autorización requerida", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         } else { // Yape, Plin, Transferencia
             referencia = txtRefDigital.getText().trim();
             if (referencia.isEmpty()) {
-                int resp = JOptionPane.showConfirmDialog(this, "¿Desea registrar el pago digital sin código de referencia?", "Referencia Vacía", JOptionPane.YES_NO_OPTION);
-                if (resp != JOptionPane.YES_OPTION) {
-                    return;
-                }
+                JOptionPane.showMessageDialog(this, "Registre el código de operación después de verificar el pago.",
+                        "Referencia requerida", JOptionPane.WARNING_MESSAGE);
+                return;
             }
         }
 
         try {
+            venta.setTerminalId(metodoSeleccionado.equals("Tarjeta")
+                    ? txtTerminalId.getText().trim() : "");
+            int confirmacion = JOptionPane.showConfirmDialog(this,
+                    "Confirme únicamente después de verificar que el pago fue aprobado " +
+                    "en el POS, Yape, Plin o banca móvil.\n\n" +
+                    "Método: " + metodoSeleccionado + "\nMonto: S/ " +
+                    String.format("%.2f", totalAPagar) +
+                    (referencia.isBlank() ? "" : "\nReferencia: " + referencia),
+                    "Confirmar pago verificado",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (confirmacion != JOptionPane.YES_OPTION) {
+                return;
+            }
             boolean exito = Procesador_De_Pagos.Procesar_Pago(venta, metodoSeleccionado, recibido, vuelto, referencia);
             if (exito) {
                 pagoCompletado = true;

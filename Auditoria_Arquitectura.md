@@ -85,7 +85,7 @@ El procesamiento de un pedido de compra y despacho de calzado sigue el siguiente
 ## 3. Análisis Técnico
 
 ### Stack Tecnológico
-*   **Lenguaje de Programación:** Java (JDK Release 20).
+*   **Lenguaje de Programación:** Java (JDK Release 21).
 *   **Gestor de Dependencias:** Maven (POM.xml).
 *   **Base de Datos:** SQLite con driver JDBC oficial (`sqlite-jdbc` v3.45.1.0).
 *   **Capa de Diseño Visual (L&F):** FlatLaf v3.5.1 (Warm Leather Theme - Aspecto premium).
