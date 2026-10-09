@@ -45,6 +45,8 @@ public class Panel_De_Chatbot extends JPanel {
     private boolean awaitingResponse = false;
     private Servicio_De_Voz_En_Vivo liveVoiceService;
     private boolean liveVoiceActive = false;
+    private String assistantStatus = "Listo";
+    private Color assistantStatusColor = new Color(225, 245, 225);
 
     public Panel_De_Chatbot() {
         this.frameRef = null;
@@ -184,6 +186,9 @@ public class Panel_De_Chatbot extends JPanel {
                 FontMetrics fmTitle = g2.getFontMetrics();
                 int titleY = avY + (avSize + fmTitle.getAscent()) / 2 - 2;
                 g2.drawString("Asistente Virtual", avX + avSize + 15, titleY);
+                g2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                g2.setColor(assistantStatusColor);
+                g2.drawString(assistantStatus, avX + avSize + 16, titleY + 19);
 
                 // Flecha hacia abajo para cerrar
                 int cx = w - 30;
@@ -645,19 +650,47 @@ public class Panel_De_Chatbot extends JPanel {
                 liveVoiceService.stop();
             }
             liveVoiceActive = false;
+            setAssistantStatus("Listo", new Color(225, 245, 225));
             addAssistantMessage("Modo voz detenido.");
+            return;
+        }
+
+        if (!com.mycompany.senati_zapato.utilidades.Configuracion.Hay_Gemini_Api_Key()) {
+            setAssistantStatus("Error de configuración", new Color(255, 220, 220));
+            addAssistantMessage("No se puede iniciar la voz: falta GEMINI_API_KEY. "
+                    + "Configúrala en el módulo Configuración y vuelve a intentarlo.");
             return;
         }
 
         liveVoiceService = new Servicio_De_Voz_En_Vivo(
                 frameRef,
-                status -> SwingUtilities.invokeLater(() -> addAssistantMessage(status)),
+                status -> SwingUtilities.invokeLater(() -> {
+                    if (status != null && status.startsWith("No se pudo iniciar voz:")) {
+                        liveVoiceActive = false;
+                        setAssistantStatus("Error de conexión", new Color(255, 220, 220));
+                    } else if (status != null && status.contains("detenido")) {
+                        setAssistantStatus("Listo", new Color(225, 245, 225));
+                    } else if (status != null && status.contains("activo")) {
+                        setAssistantStatus("Escuchando...", new Color(225, 245, 225));
+                    } else {
+                        setAssistantStatus("Conectando...", new Color(255, 240, 200));
+                    }
+                    addAssistantMessage(status);
+                    repaint();
+                }),
                 text -> SwingUtilities.invokeLater(() -> addUserMessage("[voz] " + text)),
                 text -> SwingUtilities.invokeLater(() -> addAssistantMessage(cleanAssistantText(text)))
         );
         liveVoiceActive = true;
+        setAssistantStatus("Conectando...", new Color(255, 240, 200));
         addAssistantMessage("Modo voz activo. Puedes hablarme.");
         liveVoiceService.start();
+    }
+
+    private void setAssistantStatus(String status, Color color) {
+        assistantStatus = status;
+        assistantStatusColor = color;
+        repaint();
     }
 
     private void addUserMessage(String text) {
@@ -808,6 +841,7 @@ public class Panel_De_Chatbot extends JPanel {
         chatBody.repaint();
         scrollToBottom();
         startThinkingAnimation();
+        setAssistantStatus("Procesando...", new Color(255, 240, 200));
         awaitingResponse = true;
 
         String userMsg = txt.isEmpty() ? "Describe esta imagen de un producto de zapatería" : txt;
@@ -848,6 +882,7 @@ public class Panel_De_Chatbot extends JPanel {
                         + "Puede que est\u00e9 pensando o que el servidor est\u00e9 lento. Int\u00e9ntalo de nuevo.";
                     stopThinkingAnimationIfIdle();
                     awaitingResponse = false;
+                    setAssistantStatus("Error de respuesta", new Color(255, 220, 220));
                     chatBody.revalidate();
                     chatBody.repaint();
                     scrollToBottom();
@@ -883,6 +918,8 @@ public class Panel_De_Chatbot extends JPanel {
                     msg.text = cleanAssistantText(msg.text);
                     stopThinkingAnimationIfIdle();
                     awaitingResponse = false;
+                    setAssistantStatus(liveVoiceActive ? "Escuchando..." : "Listo",
+                            new Color(225, 245, 225));
                     boolean shouldStick = isNearBottom();
                     chatBody.revalidate();
                     chatBody.repaint();

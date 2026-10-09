@@ -800,8 +800,17 @@ public class Panel_De_Ventas extends JPanel {
         if (tableModel.getRowCount() == 0) {
             return "El carrito está vacío. Agrega productos antes de cobrar.";
         }
+        double total = 0;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            total += (double) tableModel.getValueAt(i, 3);
+        }
+        total *= 1.18;
         SwingUtilities.invokeLater(this::procesarVenta);
-        return "Abriendo panel de pago...";
+        return String.format(
+                "Se procede a realizar el cobro por un total de S/ %.2f. "
+                + "En el panel de pago, selecciona el método, completa los datos solicitados "
+                + "y pulsa «CONFIRMAR E INTEGRAR VENTA» después de verificar el pago. "
+                + "La venta solo quedará registrada cuando la confirmes.", total);
     }
 
     private Producto buscarProductoFlexible(String busqueda) {

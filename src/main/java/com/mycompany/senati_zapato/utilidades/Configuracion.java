@@ -191,7 +191,7 @@ public final class Configuracion {
     }
 
     public static String Obtener_Thinking_Level() {
-        String v = Obtener("GEMINI_THINKING", "LOW").trim().toUpperCase();
+        String v = Obtener("GEMINI_THINKING", "MINIMAL").trim().toUpperCase();
         if (!v.equals("MINIMAL") && !v.equals("LOW") && !v.equals("MEDIUM") && !v.equals("HIGH")) {
             return "LOW";
         }

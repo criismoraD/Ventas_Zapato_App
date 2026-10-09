@@ -233,25 +233,30 @@ public class Dialogo_De_Pago extends JDialog {
             case "Efectivo":
                 destacarBotonMetodo(btnMetodoEfectivo);
                 cardLayout.show(centerCards, "Efectivo");
+                setTitle("Cobro asistido - Paso 1 de 2: ingresar efectivo");
                 SwingUtilities.invokeLater(() -> txtMontoRecibido.requestFocusInWindow());
                 break;
             case "Tarjeta":
                 destacarBotonMetodo(btnMetodoTarjeta);
                 cardLayout.show(centerCards, "Tarjeta");
+                setTitle("Cobro asistido - Paso 1 de 2: verificar tarjeta");
                 break;
             case "Yape":
                 destacarBotonMetodo(btnMetodoYape);
-                lblDigitalInstruction.setText("Escanee con Yape e ingrese la referencia:");
+                lblDigitalInstruction.setText("Paso 1: pague con Yape, verifique la operación e ingrese la referencia:");
+                setTitle("Cobro asistido - Paso 1 de 2: verificar Yape");
                 cardLayout.show(centerCards, "Digital");
                 break;
             case "Plin":
                 destacarBotonMetodo(btnMetodoPlin);
-                lblDigitalInstruction.setText("Escanee con Plin e ingrese la referencia:");
+                lblDigitalInstruction.setText("Paso 1: pague con Plin, verifique la operación e ingrese la referencia:");
+                setTitle("Cobro asistido - Paso 1 de 2: verificar Plin");
                 cardLayout.show(centerCards, "Digital");
                 break;
             case "Transferencia":
                 destacarBotonMetodo(btnMetodoTransferencia);
-                lblDigitalInstruction.setText("Transfiera a BCP/Interbank e ingrese referencia:");
+                lblDigitalInstruction.setText("Paso 1: realice la transferencia, verifique la operación e ingrese la referencia:");
+                setTitle("Cobro asistido - Paso 1 de 2: verificar transferencia");
                 cardLayout.show(centerCards, "Digital");
                 break;
         }
@@ -263,7 +268,7 @@ public class Dialogo_De_Pago extends JDialog {
         card.setOpaque(false);
 
         // Header interno
-        JLabel lblHeader = new JLabel("PAGO EN EFECTIVO");
+        JLabel lblHeader = new JLabel("PAGO EN EFECTIVO - Ingresa el monto recibido");
         lblHeader.setFont(new Font("Georgia", Font.BOLD, 16));
         lblHeader.setForeground(Gestor_De_Temas.getAccentColor());
         card.add(lblHeader, BorderLayout.NORTH);
@@ -400,7 +405,7 @@ public class Dialogo_De_Pago extends JDialog {
         JPanel card = new JPanel(new BorderLayout(0, 15));
         card.setOpaque(false);
 
-        JLabel lblHeader = new JLabel("PAGO CON TARJETA (CRÉDITO/DÉBITO)");
+        JLabel lblHeader = new JLabel("PAGO CON TARJETA (CRÉDITO/DÉBITO) - Verifica y confirma");
         lblHeader.setFont(new Font("Georgia", Font.BOLD, 16));
         lblHeader.setForeground(Gestor_De_Temas.getAccentColor());
         card.add(lblHeader, BorderLayout.NORTH);
@@ -469,7 +474,7 @@ public class Dialogo_De_Pago extends JDialog {
         JPanel card = new JPanel(new BorderLayout(0, 15));
         card.setOpaque(false);
 
-        lblDigitalInstruction = new JLabel("PAGO DIGITAL (YAPE/PLIN)");
+        lblDigitalInstruction = new JLabel("PAGO DIGITAL (YAPE/PLIN) - Realiza y verifica el pago");
         lblDigitalInstruction.setFont(new Font("Georgia", Font.BOLD, 16));
         lblDigitalInstruction.setForeground(Gestor_De_Temas.getAccentColor());
         card.add(lblDigitalInstruction, BorderLayout.NORTH);
@@ -559,7 +564,7 @@ public class Dialogo_De_Pago extends JDialog {
             venta.setTerminalId(metodoSeleccionado.equals("Tarjeta")
                     ? txtTerminalId.getText().trim() : "");
             int confirmacion = JOptionPane.showConfirmDialog(this,
-                    "Confirme únicamente después de verificar que el pago fue aprobado " +
+                    "Paso 2 de 2: confirme únicamente después de verificar que el pago fue aprobado " +
                     "en el POS, Yape, Plin o banca móvil.\n\n" +
                     "Método: " + metodoSeleccionado + "\nMonto: S/ " +
                     String.format("%.2f", totalAPagar) +

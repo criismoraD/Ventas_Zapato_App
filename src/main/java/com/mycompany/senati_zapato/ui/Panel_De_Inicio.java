@@ -23,6 +23,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
 public class Panel_De_Inicio extends javax.swing.JPanel {
 
@@ -218,6 +219,8 @@ class ActionCard extends JButton {
     private final Icono_Elegante.Type badgeIconType;
     private Image cardImage;
     private boolean hovered = false;
+    private float hoverProgress = 0f;
+    private Timer hoverTimer;
 
     private Color getBgColor() {
         return Gestor_De_Temas.getPanelBgColor();
@@ -260,15 +263,34 @@ class ActionCard extends JButton {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 hovered = true;
+                animateHover(true);
                 repaint();
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
                 hovered = false;
+                animateHover(false);
                 repaint();
             }
         });
+    }
+
+    private void animateHover(boolean entering) {
+        if (hoverTimer != null && hoverTimer.isRunning()) {
+            hoverTimer.stop();
+        }
+        hoverTimer = new Timer(16, e -> {
+            float target = entering ? 1f : 0f;
+            float distance = target - hoverProgress;
+            hoverProgress += distance * 0.28f;
+            if (Math.abs(distance) < 0.01f) {
+                hoverProgress = target;
+                ((Timer) e.getSource()).stop();
+            }
+            repaint();
+        });
+        hoverTimer.start();
     }
 
     @Override
@@ -281,21 +303,22 @@ class ActionCard extends JButton {
         int h = getHeight();
 
         // ── Hover Animation Scale ──
-        double scale = hovered ? 1.02 : 1.0;
+        double scale = 1.0 + (0.035 * hoverProgress);
         int scaledW = (int) (w * scale);
         int scaledH = (int) (h * scale);
         int offsetX = (w - scaledW) / 2;
-        int offsetY = (h - scaledH) / 2;
+        int offsetY = (h - scaledH) / 2 - (int) (5 * hoverProgress);
 
         g2.translate(offsetX, offsetY);
         w = scaledW;
         h = scaledH;
 
         // ── Sombra suave difuminada ──
-        for (int i = 0; i < 8; i++) {
-            int alpha = (int) (25 * (1f - (float) i / 8));
+        for (int i = 0; i < 10; i++) {
+            int alpha = (int) ((25 + 22 * hoverProgress) * (1f - (float) i / 10));
             g2.setColor(new Color(0, 0, 0, alpha));
-            g2.fillRoundRect(2 + i, 4 + i, w - 4 - i * 2, h - 6 - i * 2, 22, 22);
+            g2.fillRoundRect(2 + i, 4 + i + (int) (3 * (1f - hoverProgress)),
+                    w - 4 - i * 2, h - 6 - i * 2, 22, 22);
         }
 
         // ── Fondo de tarjeta crema ──
@@ -345,14 +368,15 @@ class ActionCard extends JButton {
         // ── Insignia circular superpuesta (Badge) ──
         int bSize = 56;
         int bx = (w - bSize) / 2;
-        int by = imgH - (bSize / 2);
+        int by = imgH - (bSize / 2) - (int) (4 * hoverProgress);
 
         // Sombra de insignia
         g2.setColor(new Color(0, 0, 0, 30));
         g2.fillOval(bx, by + 2, bSize, bSize);
 
         // Fondo terracota de insignia
-        g2.setColor(hovered ? Gestor_De_Temas.getHoverColor() : Gestor_De_Temas.getAccentColor());
+        g2.setColor(hoverProgress > 0.5f
+                ? Gestor_De_Temas.getHoverColor() : Gestor_De_Temas.getAccentColor());
         g2.fillOval(bx, by, bSize, bSize);
 
         // Borde de insignia

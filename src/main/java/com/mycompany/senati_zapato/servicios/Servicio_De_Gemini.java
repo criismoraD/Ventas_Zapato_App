@@ -244,6 +244,7 @@ public class Servicio_De_Gemini {
         "Categorías válidas: Mocasines, Botas, Zapatillas, Sandalias, Deportivos, Urbanos, Elegantes.\n" +
         "Tallas por defecto si no se especifican: 38,39,40,41,42.\n" +
         "Responde en español con máximo 2 frases cortas. " +
+        "Para saludos, confirmaciones, explicaciones breves y preguntas generales que no dependan de datos actuales, responde directamente sin usar herramientas. " +
         "Tienes memoria de la conversación: usa el contexto de los mensajes anteriores para " +
         "entender follow-ups como 'verifícalo', '¿y en negro?' o 'cuántos de esos?'. " +
         "Si el usuario da una orden corta y ambigua, interpreta que se refiere a lo último que " +
@@ -256,7 +257,9 @@ public class Servicio_De_Gemini {
         "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
         "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
         "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
-        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago. Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
+        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago y guía el cobro en modo asistido: anuncia el total, " +
+        "indica que debe elegir el método, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +
+        "nunca afirmes que el pago ya fue realizado hasta que el sistema confirme la venta. Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
         "Si el usuario pide activar o desactivar el modo oscuro, modo noche o modo claro, usa la herramienta cambiar_modo_oscuro.";
 
     private Client client;
@@ -517,7 +520,7 @@ public class Servicio_De_Gemini {
         toolList.add(Tool.builder()
                 .functionDeclarations(FunctionDeclaration.builder()
                         .name("procesar_pago")
-                        .description("Abre el panel de cobro/pago para finalizar la venta actual")
+                        .description("Inicia el cobro de la venta actual y abre el panel donde se elige el método, se verifican los datos y se confirma el pago")
                         .parameters(Schema.builder()
                                 .type(new Type(Type.Known.OBJECT))
                                 .properties(Map.of())
