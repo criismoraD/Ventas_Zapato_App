@@ -14,8 +14,8 @@ public class Dialogo_De_Comprador extends JDialog {
     private final JTextField txtDocumento = new JTextField();
     private final JTextField txtNombres = new JTextField();
     private final JTextField txtTelefono = new JTextField();
-    private final JTextField txtCorreo = new JTextField();
-    private final JTextField txtDireccion = new JTextField();
+    private final JTextField txtCorreo = null;
+    private final JTextField txtDireccion = null;
     private final JLabel lblEstado = new JLabel("Complete los datos del comprador o elija «Venta general» para continuar sin registrarlos.");
     private Cliente cliente;
     private boolean continuar;
@@ -84,8 +84,6 @@ public class Dialogo_De_Comprador extends JDialog {
         agregarCampo(formulario, c, 0, "Documento", cmbTipo, txtDocumento);
         agregarCampo(formulario, c, 1, "Nombres / razón social", txtNombres, null);
         agregarCampo(formulario, c, 2, "Teléfono", txtTelefono, null);
-        agregarCampo(formulario, c, 3, "Correo electrónico", txtCorreo, null);
-        agregarCampo(formulario, c, 4, "Dirección (opcional)", txtDireccion, null);
         contenido.add(formulario, BorderLayout.CENTER);
 
         JButton btnBuscar = crearBoton("Buscar comprador", Gestor_De_Temas.getNavColor());
@@ -172,8 +170,6 @@ public class Dialogo_De_Comprador extends JDialog {
         cliente = encontrado;
         txtNombres.setText(encontrado.getNombres());
         txtTelefono.setText(encontrado.getTelefono());
-        txtCorreo.setText(encontrado.getCorreo());
-        txtDireccion.setText(encontrado.getDireccion());
         lblEstado.setText("Comprador encontrado. Verifique los datos y continúe.");
         lblEstado.setForeground(new Color(79, 133, 87));
     }
@@ -193,11 +189,6 @@ public class Dialogo_De_Comprador extends JDialog {
             mostrarError("Ingrese los nombres o la razón social del comprador.", txtNombres);
             return;
         }
-        String correo = txtCorreo.getText().trim();
-        if (!correo.isEmpty() && !Pattern.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$", correo)) {
-            mostrarError("Ingrese un correo electrónico válido o déjelo vacío.", txtCorreo);
-            return;
-        }
         if (cliente == null) {
             cliente = new Cliente();
             cliente.setTipoDocumento((String) cmbTipo.getSelectedItem());
@@ -205,8 +196,6 @@ public class Dialogo_De_Comprador extends JDialog {
         }
         cliente.setNombres(nombres);
         cliente.setTelefono(txtTelefono.getText().trim());
-        cliente.setCorreo(correo);
-        cliente.setDireccion(txtDireccion.getText().trim());
         try {
             if (cliente.getId() == 0) {
                 Cliente previo = clienteDAO.buscarPorDocumento(cliente.getTipoDocumento(), cliente.getNumeroDocumento());
