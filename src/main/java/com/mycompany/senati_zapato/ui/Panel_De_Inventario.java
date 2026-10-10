@@ -92,13 +92,13 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                 int h = getHeight();
                 Color c = getClientProperty("currentColor") != null ? (Color) getClientProperty("currentColor") : Gestor_De_Temas.getAccentColor();
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, w, h, 12, 12);
+                g2.fillRoundRect(0, 0, w, h, 20, 20);
                 
                 Color bg = Gestor_De_Temas.getBgColor();
                 g2.setColor(new Color(bg.getRed(), bg.getGreen(), bg.getBlue(), 100));
                 float[] btnDash = {3.0f, 3.0f};
                 g2.setStroke(new java.awt.BasicStroke(1.0f, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_MITER, 10.0f, btnDash, 0.0f));
-                g2.drawRoundRect(4, 4, w - 8, h - 8, 8, 8);
+                g2.drawRoundRect(4, 4, w - 8, h - 8, 12, 12);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -120,7 +120,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                 int h = getHeight();
                 Color c = getClientProperty("currentColor") != null ? (Color) getClientProperty("currentColor") : new Color(240, 173, 78);
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, w, h, 12, 12);
+                g2.fillRoundRect(0, 0, w, h, 20, 20);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -142,7 +142,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                 int h = getHeight();
                 Color c = getClientProperty("currentColor") != null ? (Color) getClientProperty("currentColor") : new Color(220, 53, 69);
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, w, h, 12, 12);
+                g2.fillRoundRect(0, 0, w, h, 20, 20);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -168,7 +168,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                 int h = getHeight();
                 Color c = getClientProperty("currentColor") != null ? (Color) getClientProperty("currentColor") : Gestor_De_Temas.getAccentColor();
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, w, h, 12, 12);
+                g2.fillRoundRect(0, 0, w, h, 20, 20);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -660,7 +660,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 Color c = isEnabled() ? (getClientProperty("currentColor") != null ? (Color) getClientProperty("currentColor") : Gestor_De_Temas.getAccentColor()) : new Color(180, 180, 180);
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 g2.dispose(); super.paintComponent(g);
             }
         };
@@ -677,7 +677,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 Color c = getClientProperty("currentColor") != null ? (Color) getClientProperty("currentColor") : new Color(220, 53, 69);
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 g2.dispose(); super.paintComponent(g);
             }
         };

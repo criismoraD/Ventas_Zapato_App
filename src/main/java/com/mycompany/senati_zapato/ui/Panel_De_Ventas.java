@@ -265,11 +265,11 @@ public class Panel_De_Ventas extends JPanel {
                 int h = getHeight();
                 Color c = isEnabled() ? new Color(220, 53, 69) : new Color(180, 180, 180);
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, w, h, 12, 12);
+                g2.fillRoundRect(0, 0, w, h, 20, 20);
                 g2.setColor(new Color(255, 255, 255, 50));
                 float[] btnDash = {3.0f, 3.0f};
                 g2.setStroke(new java.awt.BasicStroke(1.0f, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_MITER, 10.0f, btnDash, 0.0f));
-                g2.drawRoundRect(4, 4, w - 8, h - 8, 8, 8);
+                g2.drawRoundRect(4, 4, w - 8, h - 8, 12, 12);
                 g2.dispose();
                 super.paintComponent(g);
             }
@@ -302,11 +302,11 @@ public class Panel_De_Ventas extends JPanel {
                 int h = getHeight();
                 Color c = isEnabled() ? new Color(79, 133, 87) : new Color(180, 180, 180);
                 g2.setColor(c);
-                g2.fillRoundRect(0, 0, w, h, 12, 12);
+                g2.fillRoundRect(0, 0, w, h, 20, 20);
                 g2.setColor(new Color(255, 255, 255, 50));
                 float[] btnDash = {3.0f, 3.0f};
                 g2.setStroke(new java.awt.BasicStroke(1.0f, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_MITER, 10.0f, btnDash, 0.0f));
-                g2.drawRoundRect(4, 4, w - 8, h - 8, 8, 8);
+                g2.drawRoundRect(4, 4, w - 8, h - 8, 12, 12);
                 g2.dispose();
                 super.paintComponent(g);
             }
