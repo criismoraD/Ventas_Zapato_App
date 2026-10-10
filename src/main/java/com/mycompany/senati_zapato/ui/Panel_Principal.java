@@ -31,7 +31,7 @@ public class Panel_Principal extends JFrame {
     protected JButton btnFloatChat;
     protected JPanel contentPanel;
     private Image bgImage;
-    protected JButton btnToggleTheme;
+
 
     public Panel_Principal() {
         CLOSE_BG = Gestor_De_Temas.getAccentColor();
@@ -53,9 +53,7 @@ public class Panel_Principal extends JFrame {
             Gestor_De_Temas.applyLeatherTheme(nextDark);
             CLOSE_BG = Gestor_De_Temas.getAccentColor();
             CLOSE_HOVER = Gestor_De_Temas.getHoverColor();
-            if (btnToggleTheme != null) {
-                updateThemeToggleButton(btnToggleTheme);
-            }
+
             
             // Re-apply component tree UI changes
             SwingUtilities.updateComponentTreeUI(Panel_Principal.this);
@@ -247,43 +245,6 @@ public class Panel_Principal extends JFrame {
         rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         rightPanel.setOpaque(false);
 
-        btnToggleTheme = new JButton() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color bg = Gestor_De_Temas.isDarkMode() ? new Color(253, 251, 247) : new Color(82, 50, 37);
-                g2.setColor(bg);
-                g2.fillOval(0, 0, getWidth(), getHeight());
-                g2.setColor(new Color(255, 255, 255, Gestor_De_Temas.isDarkMode() ? 70 : 35));
-                g2.drawOval(3, 3, getWidth() - 7, getHeight() - 7);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        btnToggleTheme.setPreferredSize(new Dimension(40, 40));
-        btnToggleTheme.setContentAreaFilled(false);
-        btnToggleTheme.setBorderPainted(false);
-        btnToggleTheme.setFocusPainted(false);
-        btnToggleTheme.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        updateThemeToggleButton(btnToggleTheme);
-
-        btnToggleTheme.addActionListener(e -> {
-            boolean nextDark = !Gestor_De_Temas.isDarkMode();
-            Gestor_De_Temas.applyLeatherTheme(nextDark);
-            CLOSE_BG = Gestor_De_Temas.getAccentColor();
-            CLOSE_HOVER = Gestor_De_Temas.getHoverColor();
-            updateThemeToggleButton(btnToggleTheme);
-            
-            // Re-apply component tree UI changes
-            SwingUtilities.updateComponentTreeUI(Panel_Principal.this);
-            
-            // Revalidate and repaint everything
-            Panel_Principal.this.revalidate();
-            Panel_Principal.this.repaint();
-        });
-
         btnMinimizeWindow = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -320,7 +281,7 @@ public class Panel_Principal extends JFrame {
             @Override public void mouseExited(MouseEvent e)  { btnCloseX.setBackground(CLOSE_BG); }
         });
 
-        rightPanel.add(btnToggleTheme);
+
         rightPanel.add(btnMinimizeWindow);
         rightPanel.add(btnCloseX);
         topNavBar.add(rightPanel, BorderLayout.EAST);
@@ -561,15 +522,7 @@ public class Panel_Principal extends JFrame {
 
     }
 
-    private void updateThemeToggleButton(JButton btn) {
-        if (Gestor_De_Temas.isDarkMode()) {
-            btn.setIcon(new Icono_Elegante(Icono_Elegante.Type.SUN, 22, new Color(138, 82, 57)));
-            btn.setToolTipText("Cambiar a Modo Claro");
-        } else {
-            btn.setIcon(new Icono_Elegante(Icono_Elegante.Type.MOON, 22, new Color(253, 231, 177)));
-            btn.setToolTipText("Cambiar a Modo Oscuro");
-        }
-    }
+
 
     private javax.swing.JScrollPane crearScrollWrapper(javax.swing.JPanel panel) {
         javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(panel);
