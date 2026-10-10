@@ -302,12 +302,12 @@ class ActionCard extends JButton {
         int w = getWidth();
         int h = getHeight();
 
-        // ── Hover Animation Scale ──
-        double scale = 1.0 + (0.035 * hoverProgress);
-        int scaledW = (int) (w * scale);
-        int scaledH = (int) (h * scale);
-        int offsetX = (w - scaledW) / 2;
-        int offsetY = (h - scaledH) / 2 - (int) (5 * hoverProgress);
+        // ── Hover Animation (sin escalar: evita el temblor) ──
+        double scale = 1.0;
+        int scaledW = w;
+        int scaledH = h;
+        int offsetX = 0;
+        int offsetY = 0;
 
         g2.translate(offsetX, offsetY);
         w = scaledW;
