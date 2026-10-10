@@ -13,6 +13,9 @@ comprobantes/
 *_backup_*.db
 senati_zapato-jdbc*.db
 
+# Logs de diagnostico que genera la app en tiempo de ejecucion.
+diagnostico_*.log
+
 # IDEs
 .idea/
 .vscode/

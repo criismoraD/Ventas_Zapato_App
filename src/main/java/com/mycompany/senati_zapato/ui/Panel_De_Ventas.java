@@ -796,15 +796,23 @@ public class Panel_De_Ventas extends JPanel {
         return "Carrito vaciado correctamente.";
     }
 
+    /** Evita que el asistente encadene varios cobros y tape el diálogo de pago. */
+    private boolean cobroEnCurso = false;
+
     public String Abrir_Panel_De_Pago() {
         if (tableModel.getRowCount() == 0) {
             return "El carrito está vacío. Agrega productos antes de cobrar.";
+        }
+        if (cobroEnCurso) {
+            return "El formulario del comprador ya está abierto. Complétalo o elija «Venta general» "
+                    + "para avanzar a la selección del método de pago.";
         }
         double total = 0;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             total += (double) tableModel.getValueAt(i, 3);
         }
         total *= 1.18;
+        registrarDiagnosticoCobro("Solicitud de cobro recibida. total=" + total);
         SwingUtilities.invokeLater(this::procesarVenta);
         return String.format(
                 "Se procede a realizar el cobro por un total de S/ %.2f. "
@@ -994,64 +1002,122 @@ public class Panel_De_Ventas extends JPanel {
     }
 
     private void procesarVenta() {
-        if (tableModel.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this, "El carrito está vacío.", "Error", JOptionPane.ERROR_MESSAGE);
+        // Cubre todas las rutas (bot, botón COBRAR y F12): un solo cobro a la vez.
+        if (cobroEnCurso) {
+            registrarDiagnosticoCobro("Ignorado: ya hay un cobro en curso.");
             return;
         }
+        cobroEnCurso = true;
+        boolean encoloPago = false;
+        try {
+            if (tableModel.getRowCount() == 0) {
+                registrarDiagnosticoCobro("Cancelado: el carrito quedó vacío.");
+                return;
+            }
 
-        double total = 0;
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            total += (double) tableModel.getValueAt(i, 3);
+            double total = 0;
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                total += (double) tableModel.getValueAt(i, 3);
+            }
+            total = total * 1.18; // Incluyendo IGV
+
+            Venta venta = new Venta();
+            venta.Set_Cajero("Admin"); // Usuario por defecto
+            venta.Set_Monto_Total(total);
+            venta.Set_Estado("Pendiente");
+
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                int idProd = (int) tableModel.getValueAt(i, 0);
+                int cant = (int) tableModel.getValueAt(i, 1);
+                String nombre = (String) tableModel.getValueAt(i, 2);
+                double subTot = (double) tableModel.getValueAt(i, 3);
+                double pUnit = subTot / cant;
+
+                venta.Get_Detalles().add(new Detalle_De_Venta(idProd, nombre, cant, pUnit, subTot));
+            }
+
+            // Obtener el Frame superior para centrar diálogos modales
+            Window ancestor = SwingUtilities.getWindowAncestor(this);
+            Frame parentFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
+
+            registrarDiagnosticoCobro("Abriendo formulario del comprador. parentFrame="
+                    + (parentFrame == null ? "null" : "ok"));
+
+            Dialogo_De_Comprador compradorDialog = new Dialogo_De_Comprador(parentFrame);
+            // La ventana principal es alwaysOnTop: fuerza el formulario al frente.
+            compradorDialog.setAlwaysOnTop(true);
+            compradorDialog.setVisible(true);
+            if (!compradorDialog.continuar()) {
+                registrarDiagnosticoCobro("Formulario del comprador cancelado por el usuario.");
+                return;
+            }
+            venta.setCliente(compradorDialog.getCliente());
+
+            registrarDiagnosticoCobro("Comprador confirmado. Encolando diálogo de pago...");
+            // Abrir el pago después de que Swing termine de retirar el diálogo anterior.
+            // Esto evita que la segunda ventana quede detrás del formulario del comprador.
+            SwingUtilities.invokeLater(() -> mostrarDialogoDePago(parentFrame, venta));
+            encoloPago = true;
+        } catch (RuntimeException ex) {
+            registrarDiagnosticoCobro("ERROR en procesarVenta: " + ex);
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo iniciar el cobro:\n" + ex,
+                    "Error de cobro", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            // Si no se abrió el pago, el flag se libera aquí para permitir reintentar.
+            if (!encoloPago) {
+                cobroEnCurso = false;
+            }
         }
-        total = total * 1.18; // Incluyendo IGV
-
-        Venta venta = new Venta();
-        venta.Set_Cajero("Admin"); // Usuario por defecto
-        venta.Set_Monto_Total(total);
-        venta.Set_Estado("Pendiente");
-
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            int idProd = (int) tableModel.getValueAt(i, 0);
-            int cant = (int) tableModel.getValueAt(i, 1);
-            String nombre = (String) tableModel.getValueAt(i, 2);
-            double subTot = (double) tableModel.getValueAt(i, 3);
-            double pUnit = subTot / cant;
-
-            venta.Get_Detalles().add(new Detalle_De_Venta(idProd, nombre, cant, pUnit, subTot));
-        }
-
-        // Obtener el Frame superior para centrar diálogos modales
-        Window ancestor = SwingUtilities.getWindowAncestor(this);
-        Frame parentFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
-
-        Dialogo_De_Comprador compradorDialog = new Dialogo_De_Comprador(parentFrame);
-        compradorDialog.setVisible(true);
-        if (!compradorDialog.continuar()) {
-            return;
-        }
-        venta.setCliente(compradorDialog.getCliente());
-
-        // Abrir el pago después de que Swing termine de retirar el diálogo anterior.
-        // Esto evita que la segunda ventana quede detrás del formulario del comprador.
-        SwingUtilities.invokeLater(() -> mostrarDialogoDePago(parentFrame, venta));
     }
 
     private void mostrarDialogoDePago(Frame parentFrame, Venta venta) {
-        Dialogo_De_Pago pagoDialog = new Dialogo_De_Pago(parentFrame, venta);
-        pagoDialog.setVisible(true);
+        try {
+            registrarDiagnosticoCobro("Abriendo diálogo de método de pago...");
+            Dialogo_De_Pago pagoDialog = new Dialogo_De_Pago(parentFrame, venta);
+            // La ventana principal es alwaysOnTop: fuerza el pago al frente.
+            pagoDialog.setAlwaysOnTop(true);
+            pagoDialog.setVisible(true);
 
-        if (pagoDialog.Esta_Pago_Completado()) {
-            // Mostrar comprobante tipo ticket térmico
-            Dialogo_De_Ticket ticketDialog = new Dialogo_De_Ticket(parentFrame, venta);
-            ticketDialog.setVisible(true);
+            if (pagoDialog.Esta_Pago_Completado()) {
+                // Mostrar comprobante tipo ticket térmico
+                Dialogo_De_Ticket ticketDialog = new Dialogo_De_Ticket(parentFrame, venta);
+                ticketDialog.setAlwaysOnTop(true);
+                ticketDialog.setVisible(true);
 
-            // Vaciar carrito
-            tableModel.setRowCount(0);
-            updateTotals();
-            
-            // Refrescar stock y estados del catálogo
-            todosLosProductos = productoDAO.Obtener_Todos();
-            aplicarFiltros();
+                // Vaciar carrito
+                tableModel.setRowCount(0);
+                updateTotals();
+
+                // Refrescar stock y estados del catálogo
+                todosLosProductos = productoDAO.Obtener_Todos();
+                aplicarFiltros();
+                registrarDiagnosticoCobro("Venta confirmada y ticket cerrado.");
+            } else {
+                registrarDiagnosticoCobro("Diálogo de pago cerrado sin confirmar.");
+            }
+        } catch (RuntimeException ex) {
+            registrarDiagnosticoCobro("ERROR en mostrarDialogoDePago: " + ex);
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo abrir el método de pago:\n" + ex,
+                    "Error de cobro", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            cobroEnCurso = false;
+        }
+    }
+
+    private void registrarDiagnosticoCobro(String evento) {
+        try {
+            java.nio.file.Path log = java.nio.file.Paths.get(System.getProperty("user.dir"),
+                    "Datos_SenatiZapato", "diagnostico_cobro.log");
+            java.nio.file.Files.createDirectories(log.getParent());
+            String linea = java.time.LocalDateTime.now()
+                    + " | cwd=" + System.getProperty("user.dir")
+                    + " | " + evento + System.lineSeparator();
+            java.nio.file.Files.write(log, linea.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch (Exception ignorada) {
+            // El diagnostico nunca debe interrumpir el cobro.
         }
     }
 

@@ -199,7 +199,21 @@ public class Dialogo_De_Comprador extends JDialog {
         cliente.setDireccion(txtDireccion.getText().trim());
         try {
             if (cliente.getId() == 0) {
-                cliente = clienteDAO.guardar(cliente);
+                Cliente previo = clienteDAO.buscarPorDocumento(cliente.getTipoDocumento(), cliente.getNumeroDocumento());
+                if (previo != null) {
+                    cliente = previo;
+                    JOptionPane.showMessageDialog(this,
+                            "Ese documento ya está registrado a nombre de:\n\n"
+                                    + previo.getNombres() + "\n"
+                                    + previo.getTipoDocumento() + " " + previo.getNumeroDocumento()
+                                    + "\n\nSe usarán estos datos registrados para continuar.",
+                            "Comprador ya registrado",
+                            JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    cliente = clienteDAO.guardar(cliente);
+                }
+            } else {
+                cliente = clienteDAO.actualizar(cliente);
             }
             continuar = true;
             dispose();
