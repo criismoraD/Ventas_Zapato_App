@@ -131,7 +131,7 @@ public class Dialogo_De_Ticket extends JDialog {
         titlePanel.setBackground(Gestor_De_Temas.getNavColor());
         titlePanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Gestor_De_Temas.getBorderColor()));
         JLabel lblHeader = new JLabel("TICKET DE VENTA");
-        lblHeader.setFont(new Font("Georgia", Font.BOLD, 16));
+        lblHeader.setFont(new Font("Inter", Font.BOLD, 16));
         lblHeader.setForeground(Gestor_De_Temas.getTextColor());
         titlePanel.add(lblHeader);
         container.add(titlePanel, BorderLayout.NORTH);
@@ -167,7 +167,7 @@ public class Dialogo_De_Ticket extends JDialog {
         JButton btnGuardar = new JButton("Guardar TXT");
         btnGuardar.setIcon(new Icono_Elegante(Icono_Elegante.Type.SAVE, 18));
         btnGuardar.setIconTextGap(8);
-        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnGuardar.setFont(new Font("Inter", Font.BOLD, 13));
         btnGuardar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnGuardar.addActionListener(e -> guardarTicketComoTexto());
         actions.add(btnGuardar);
@@ -175,7 +175,7 @@ public class Dialogo_De_Ticket extends JDialog {
         JButton btnImprimir = new JButton("Imprimir Ticket");
         btnImprimir.setIcon(new Icono_Elegante(Icono_Elegante.Type.PRINT, 18));
         btnImprimir.setIconTextGap(8);
-        btnImprimir.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnImprimir.setFont(new Font("Inter", Font.BOLD, 13));
         btnImprimir.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnImprimir.addActionListener(e -> simularImpresion());
         actions.add(btnImprimir);
@@ -183,7 +183,7 @@ public class Dialogo_De_Ticket extends JDialog {
         JButton btnCerrar = new JButton("Cerrar (Esc)");
         btnCerrar.setIcon(new Icono_Elegante(Icono_Elegante.Type.CLOSE, 16));
         btnCerrar.setIconTextGap(8);
-        btnCerrar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnCerrar.setFont(new Font("Inter", Font.BOLD, 13));
         btnCerrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnCerrar.addActionListener(e -> dispose());
         actions.add(btnCerrar);

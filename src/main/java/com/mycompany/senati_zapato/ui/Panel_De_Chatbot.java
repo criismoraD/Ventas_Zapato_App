@@ -198,11 +198,11 @@ public class Panel_De_Chatbot extends JPanel {
 
                 // Título centrado verticalmente
                 g2.setColor(new Color(253, 251, 247));
-                g2.setFont(new Font("Georgia", Font.BOLD, 20));
+                g2.setFont(new Font("Inter", Font.BOLD, 20));
                 FontMetrics fmTitle = g2.getFontMetrics();
                 int titleY = avY + (avSize + fmTitle.getAscent()) / 2 - 2;
                 g2.drawString("Asistente Virtual", avX + avSize + 15, titleY);
-                g2.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                g2.setFont(new Font("Inter", Font.PLAIN, 12));
                 g2.setColor(assistantStatusColor);
                 g2.drawString(assistantStatus, avX + avSize + 16, titleY + 19);
 
@@ -415,7 +415,7 @@ public class Panel_De_Chatbot extends JPanel {
                 int maxBubbleW = w - 80; // Máximo ancho del globo
 
                 for (ChatMsg msg : messages) {
-                    g2.setFont(new Font("Georgia", Font.PLAIN, 16));
+                    g2.setFont(new Font("Inter", Font.PLAIN, 16));
                     FontMetrics fm = g2.getFontMetrics();
                     int lineHeight = fm.getHeight() + 4;
                     int padding = 15;
@@ -471,7 +471,7 @@ public class Panel_De_Chatbot extends JPanel {
             @Override
             public Dimension getPreferredSize() {
                 int currentY = 20;
-                Font f = new Font("Georgia", Font.PLAIN, 16);
+                Font f = new Font("Inter", Font.PLAIN, 16);
                 int padding = 15;
                 int w = getWidth() > 0 ? getWidth() : 350;
                 int maxBubbleW = w - 80;
@@ -586,7 +586,7 @@ public class Panel_De_Chatbot extends JPanel {
         txtInput = new JTextField();
         txtInput.setOpaque(false);
         txtInput.setBorder(null);
-        txtInput.setFont(new Font("Georgia", Font.PLAIN, 16));
+        txtInput.setFont(new Font("Inter", Font.PLAIN, 16));
         txtInput.setForeground(Gestor_De_Temas.getTextColor());
         
         inputPanel.addComponentListener(new java.awt.event.ComponentAdapter() {

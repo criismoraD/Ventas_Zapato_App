@@ -104,11 +104,11 @@ public class Panel_De_Inicio extends javax.swing.JPanel {
         welcomePanel.setPreferredSize(new Dimension(0, 100));
 
         JLabel lblWelcome = new JLabel("Bienvenido a Sello Masculino");
-        lblWelcome.setFont(new Font("Georgia", Font.BOLD, 28));
+        lblWelcome.setFont(new Font("Inter", Font.BOLD, 28));
         lblWelcome.setForeground(Gestor_De_Temas.getTextColor());
 
         JLabel lblSub = new JLabel("Gestiona ventas, inventario y reportes de tu zapatería de caballero.");
-        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblSub.setFont(new Font("Inter", Font.PLAIN, 16));
         lblSub.setForeground(Gestor_De_Temas.getMutedColor());
 
         JPanel textPanel = new JPanel();
@@ -192,11 +192,11 @@ public class Panel_De_Inicio extends javax.swing.JPanel {
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
 
         JLabel lblTitulo = new JLabel(titulo);
-        lblTitulo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblTitulo.setFont(new Font("Inter", Font.PLAIN, 13));
         lblTitulo.setForeground(Gestor_De_Temas.getMutedColor());
 
         JLabel lblValor = new JLabel(valor);
-        lblValor.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblValor.setFont(new Font("Inter", Font.BOLD, 22));
         lblValor.setForeground(Gestor_De_Temas.getTextColor());
 
         textPanel.add(lblTitulo);
@@ -392,7 +392,7 @@ class ActionCard extends JButton {
 
         // ── Título (Georgia) ──
         g2.setColor(getTextColor());
-        g2.setFont(new Font("Georgia", Font.BOLD, 24));
+        g2.setFont(new Font("Inter", Font.BOLD, 24));
         java.awt.FontMetrics fmTitle = g2.getFontMetrics();
         int titleX = (w - fmTitle.stringWidth(title)) / 2;
         int titleY = imgH + 50;
@@ -400,7 +400,7 @@ class ActionCard extends JButton {
 
         // ── Separador elegante — ⬥ — ──
         g2.setColor(getSubtextColor());
-        g2.setFont(new Font("Georgia", Font.PLAIN, 12));
+        g2.setFont(new Font("Inter", Font.PLAIN, 12));
         java.awt.FontMetrics fmSep = g2.getFontMetrics();
         String sepStr = "---  *  ---";
         int sepX = (w - fmSep.stringWidth(sepStr)) / 2;
@@ -409,7 +409,7 @@ class ActionCard extends JButton {
 
         // ── Subtítulo / Descripción ──
         g2.setColor(getSubtextColor());
-        g2.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        g2.setFont(new Font("Inter", Font.PLAIN, 15));
         java.awt.FontMetrics fmSub = g2.getFontMetrics();
 
         String[] words = subtitle.split(" ");

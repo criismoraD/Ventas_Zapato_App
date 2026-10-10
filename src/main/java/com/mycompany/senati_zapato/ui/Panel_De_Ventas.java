@@ -130,7 +130,7 @@ public class Panel_De_Ventas extends JPanel {
         headerCarrito.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
         JLabel lblTicketHeader = new JLabel("Lista de Compras", SwingConstants.CENTER);
-        lblTicketHeader.setFont(new Font("Georgia", Font.BOLD, 22));
+        lblTicketHeader.setFont(new Font("Inter", Font.BOLD, 22));
         lblTicketHeader.setForeground(Gestor_De_Temas.getTextColor());
         headerCarrito.add(lblTicketHeader, BorderLayout.CENTER);
 
@@ -163,12 +163,12 @@ public class Panel_De_Ventas extends JPanel {
         cartTable.setRowHeight(48);
         cartTable.setBackground(Gestor_De_Temas.getPanelBgColor());
         cartTable.setForeground(Gestor_De_Temas.getTextColor());
-        cartTable.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        cartTable.setFont(new Font("Inter", Font.PLAIN, 15));
         cartTable.setShowGrid(false);
         cartTable.setIntercellSpacing(new Dimension(0, 0));
         cartTable.getTableHeader().setBackground(Gestor_De_Temas.getNavColor());
         cartTable.getTableHeader().setForeground(Gestor_De_Temas.getTextColor());
-        cartTable.getTableHeader().setFont(new Font("Georgia", Font.BOLD, 14));
+        cartTable.getTableHeader().setFont(new Font("Inter", Font.BOLD, 14));
         cartTable.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Gestor_De_Temas.getBorderColor()));
         
         // Hide ID column
@@ -226,15 +226,15 @@ public class Panel_De_Ventas extends JPanel {
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)));
 
         lblSubtotal = new JLabel("Subtotal: S/ 0.00");
-        lblSubtotal.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        lblSubtotal.setFont(new Font("Inter", Font.PLAIN, 15));
         lblSubtotal.setForeground(Gestor_De_Temas.getMutedColor());
         lblSubtotal.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblIgv = new JLabel("IGV (18%): S/ 0.00");
-        lblIgv.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        lblIgv.setFont(new Font("Inter", Font.PLAIN, 15));
         lblIgv.setForeground(Gestor_De_Temas.getMutedColor());
         lblIgv.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblTotalDisplay = new JLabel("S/ 0.00");
-        lblTotalDisplay.setFont(new Font("Segoe UI", Font.BOLD, 40));
+        lblTotalDisplay.setFont(new Font("Inter", Font.BOLD, 40));
         lblTotalDisplay.setForeground(Gestor_De_Temas.getAccentColor());
         lblTotalDisplay.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -243,7 +243,7 @@ public class Panel_De_Ventas extends JPanel {
         checkoutPanel.add(lblIgv);
         checkoutPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         JLabel lblTotalLabel = new JLabel("TOTAL A PAGAR");
-        lblTotalLabel.setFont(new Font("Georgia", Font.BOLD, 16));
+        lblTotalLabel.setFont(new Font("Inter", Font.BOLD, 16));
         lblTotalLabel.setForeground(Gestor_De_Temas.getTextColor());
         lblTotalLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         checkoutPanel.add(lblTotalLabel);
@@ -275,7 +275,7 @@ public class Panel_De_Ventas extends JPanel {
             }
         };
         btnCancelar.setIcon(new Icono_Elegante(Icono_Elegante.Type.TRASH, 20, Color.WHITE));
-        btnCancelar.setFont(new Font("Georgia", Font.BOLD, 16));
+        btnCancelar.setFont(new Font("Inter", Font.BOLD, 16));
         btnCancelar.setForeground(Color.WHITE);
         btnCancelar.setContentAreaFilled(false);
         btnCancelar.setBorderPainted(false);
@@ -312,7 +312,7 @@ public class Panel_De_Ventas extends JPanel {
             }
         };
         btnCobrar.setIcon(new Icono_Elegante(Icono_Elegante.Type.CREDIT_CARD, 20, Color.WHITE));
-        btnCobrar.setFont(new Font("Georgia", Font.BOLD, 16));
+        btnCobrar.setFont(new Font("Inter", Font.BOLD, 16));
         btnCobrar.setForeground(Color.WHITE);
         btnCobrar.setContentAreaFilled(false);
         btnCobrar.setBorderPainted(false);
@@ -336,7 +336,7 @@ public class Panel_De_Ventas extends JPanel {
         
         // Buscador
         txtSearch = new JTextField();
-        txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        txtSearch.setFont(new Font("Inter", Font.PLAIN, 18));
         txtSearch.setPreferredSize(new Dimension(0, 45));
         txtSearch.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(Gestor_De_Temas.getBorderColor(), 1),
@@ -350,7 +350,7 @@ public class Panel_De_Ventas extends JPanel {
         JLabel lblSearchIcon = new JLabel("  Buscar por código de barras (SKU) o nombre...");
         lblSearchIcon.setIcon(new Icono_Elegante(Icono_Elegante.Type.SEARCH, 18, Gestor_De_Temas.getMutedColor()));
         lblSearchIcon.setForeground(Gestor_De_Temas.getMutedColor());
-        lblSearchIcon.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        lblSearchIcon.setFont(new Font("Inter", Font.PLAIN, 18));
         txtSearch.setLayout(new BorderLayout());
         txtSearch.add(lblSearchIcon, BorderLayout.WEST);
         
@@ -378,7 +378,7 @@ public class Panel_De_Ventas extends JPanel {
             BorderFactory.createEmptyBorder(4, 10, 4, 6)
         ));
         chipLabel = new JLabel("");
-        chipLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        chipLabel.setFont(new Font("Inter", Font.BOLD, 14));
         chipLabel.setForeground(Gestor_De_Temas.getTextColor());
         lblFiltroAsistente.add(chipLabel);
 
@@ -402,7 +402,7 @@ public class Panel_De_Ventas extends JPanel {
         
         for (String cat : categorias) {
             JButton tabBtn = new JButton(cat);
-            tabBtn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            tabBtn.setFont(new Font("Inter", Font.BOLD, 15));
             tabBtn.setForeground(Gestor_De_Temas.getMutedColor());
             tabBtn.setBackground(Gestor_De_Temas.getBgColor());
             tabBtn.setBorder(BorderFactory.createCompoundBorder(
@@ -1255,7 +1255,7 @@ public class Panel_De_Ventas extends JPanel {
             }
             
             JLabel lblPrice = new JLabel(String.format("S/ %.2f", prod.Get_Precio()));
-            lblPrice.setFont(new Font("Georgia", Font.BOLD, 17));
+            lblPrice.setFont(new Font("Inter", Font.BOLD, 17));
             lblPrice.setForeground(isAgotado ? Color.GRAY : Gestor_De_Temas.getAccentColor());
             
             headerPanel.add(iconLabel, BorderLayout.CENTER);
@@ -1264,7 +1264,7 @@ public class Panel_De_Ventas extends JPanel {
             add(Box.createRigidArea(new Dimension(0, 10)));
 
             JLabel lblName = new JLabel("<html><div style='text-align: center; width: 200px;'>" + prod.Get_Nombre() + "</div></html>");
-            lblName.setFont(new Font("Georgia", Font.BOLD, 16));
+            lblName.setFont(new Font("Inter", Font.BOLD, 16));
             lblName.setForeground(isAgotado ? Gestor_De_Temas.getMutedColor() : Gestor_De_Temas.getTextColor());
             lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
             add(lblName);
@@ -1273,7 +1273,7 @@ public class Panel_De_Ventas extends JPanel {
             // Tallas text
             String tallasText = (prod.Get_Tallas() != null && !prod.Get_Tallas().isEmpty()) ? prod.Get_Tallas() : "Única";
             JLabel lblTallas = new JLabel("Tallas: " + tallasText, SwingConstants.CENTER);
-            lblTallas.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            lblTallas.setFont(new Font("Inter", Font.PLAIN, 14));
             lblTallas.setForeground(Gestor_De_Temas.getMutedColor());
             lblTallas.setAlignmentX(Component.CENTER_ALIGNMENT);
             add(lblTallas);
@@ -1282,7 +1282,7 @@ public class Panel_De_Ventas extends JPanel {
             // Badge / Icono de agregar
             if (isAgotado) {
                 JLabel lblAgotadoBadge = new JLabel("AGOTADO", SwingConstants.CENTER);
-                lblAgotadoBadge.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                lblAgotadoBadge.setFont(new Font("Inter", Font.BOLD, 14));
                 lblAgotadoBadge.setForeground(new Color(220, 53, 69)); // Rojo
                 lblAgotadoBadge.setAlignmentX(Component.CENTER_ALIGNMENT);
                 add(lblAgotadoBadge);

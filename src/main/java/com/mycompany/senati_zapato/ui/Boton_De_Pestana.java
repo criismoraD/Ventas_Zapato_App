@@ -43,7 +43,7 @@ public class Boton_De_Pestana extends JButton {
         setBorderPainted(false);
         setFocusPainted(false);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
-        setFont(new Font("Georgia", Font.PLAIN, 20));
+        setFont(new Font("Inter", Font.PLAIN, 20));
         setForeground(getDefaultColor());
 
         addMouseListener(new java.awt.event.MouseAdapter() {

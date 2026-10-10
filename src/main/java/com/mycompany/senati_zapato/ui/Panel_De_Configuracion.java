@@ -52,10 +52,10 @@ public class Panel_De_Configuracion extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JLabel titulo = new JLabel("Configuracion del Asistente IA");
-        titulo.setFont(new Font("Georgia", Font.BOLD, 26));
+        titulo.setFont(new Font("Inter", Font.BOLD, 26));
         titulo.setForeground(Gestor_De_Temas.getTextColor());
         JLabel subt = new JLabel("Pega tu API Key de Gemini y elige los modelos. Se guardan en .env.");
-        subt.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subt.setFont(new Font("Inter", Font.PLAIN, 14));
         subt.setForeground(Gestor_De_Temas.getMutedColor());
         JPanel head = new JPanel(new BorderLayout(4, 4));
         head.setOpaque(false);
@@ -81,7 +81,7 @@ public class Panel_De_Configuracion extends JPanel {
         g.gridx = 0; g.gridy = fila; g.weightx = 0;
         form.add(new JLabel("Estado:"), g);
         g.gridx = 1; g.weightx = 1;
-        lblEstadoKey.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblEstadoKey.setFont(new Font("Inter", Font.BOLD, 13));
         form.add(lblEstadoKey, g);
         fila++;
 
@@ -98,7 +98,7 @@ public class Panel_De_Configuracion extends JPanel {
         fila++;
 
         g.gridx = 1; g.gridy = fila;
-        lblVozInfo.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        lblVozInfo.setFont(new Font("Inter", Font.ITALIC, 12));
         lblVozInfo.setForeground(Gestor_De_Temas.getMutedColor());
         lblVozInfo.setText("Principal: Gemini 3.8 Live. Fallback automatico: 3.1 si tu cuenta no lo tiene.");
         form.add(lblVozInfo, g);
@@ -137,7 +137,7 @@ public class Panel_De_Configuracion extends JPanel {
         JButton btnRecargar = new JButton("Recargar");
         for (JButton b : new JButton[]{btnProbar, btnGuardar, btnRecargar}) {
             b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            b.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            b.setFont(new Font("Inter", Font.BOLD, 14));
             b.setPreferredSize(new Dimension(170, 42));
         }
         btnGuardar.setBackground(new Color(79, 133, 87));

@@ -106,7 +106,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         btnNew.setContentAreaFilled(false);
         btnNew.setBorderPainted(false);
         btnNew.setForeground(Color.WHITE);
-        btnNew.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnNew.setFont(new Font("Inter", Font.BOLD, 16));
         btnNew.setFocusPainted(false);
         btnNew.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnNew.setIcon(new Icono_Elegante(Icono_Elegante.Type.ADD, 20, Color.WHITE));
@@ -128,7 +128,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         btnEdit.setContentAreaFilled(false);
         btnEdit.setBorderPainted(false);
         btnEdit.setForeground(Color.WHITE);
-        btnEdit.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnEdit.setFont(new Font("Inter", Font.BOLD, 16));
         btnEdit.setFocusPainted(false);
         btnEdit.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnEdit.setIcon(new Icono_Elegante(Icono_Elegante.Type.BOX, 20, Color.WHITE));
@@ -150,7 +150,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         btnDelete.setContentAreaFilled(false);
         btnDelete.setBorderPainted(false);
         btnDelete.setForeground(Color.WHITE);
-        btnDelete.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnDelete.setFont(new Font("Inter", Font.BOLD, 16));
         btnDelete.setFocusPainted(false);
         btnDelete.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnDelete.setIcon(new Icono_Elegante(Icono_Elegante.Type.TRASH, 20, Color.WHITE));
@@ -176,7 +176,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         btnSelectAll.setContentAreaFilled(false);
         btnSelectAll.setBorderPainted(false);
         btnSelectAll.setForeground(Color.WHITE);
-        btnSelectAll.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnSelectAll.setFont(new Font("Inter", Font.BOLD, 16));
         btnSelectAll.setFocusPainted(false);
         btnSelectAll.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnSelectAll.setIcon(new Icono_Elegante(Icono_Elegante.Type.ADD, 20, Color.WHITE));
@@ -238,7 +238,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
 
         JTextField txtSearch = new JTextField();
         txtSearch.setPreferredSize(new Dimension(375, 45));
-        txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        txtSearch.setFont(new Font("Inter", Font.PLAIN, 16));
         txtSearch.putClientProperty("JTextField.placeholderText", "Buscar producto por nombre o código...");
         txtSearch.putClientProperty("JTextField.leadingIcon", new Icono_Elegante(Icono_Elegante.Type.SEARCH, 18, Gestor_De_Temas.getMutedColor()));
         txtSearch.putClientProperty("JTextField.showClearButton", true);
@@ -301,11 +301,11 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         table.setRowHeight(55);
         table.setBackground(Gestor_De_Temas.getPanelBgColor());
         table.setForeground(Gestor_De_Temas.getTextColor());
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        table.setFont(new Font("Inter", Font.PLAIN, 15));
         table.setGridColor(new Color(230, 225, 215));
         table.getTableHeader().setBackground(Gestor_De_Temas.getAccentColor());
         table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 15));
+        table.getTableHeader().setFont(new Font("Inter", Font.BOLD, 15));
         table.getTableHeader().setPreferredSize(new Dimension(100, 45));
 
         // 1. Evitar seleccionar varios productos (Selección Única) y 2. Comportamiento de "Interruptor" (Toggle)
@@ -457,7 +457,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         JTextField txtUrlImagen = new JTextField(producto != null && producto.Get_Url_Imagen() != null ? producto.Get_Url_Imagen() : "");
         txtUrlImagen.setEditable(false);
         JButton btnSeleccionarImagen = new JButton("...");
-        btnSeleccionarImagen.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnSeleccionarImagen.setFont(new Font("Inter", Font.BOLD, 14));
         btnSeleccionarImagen.setBackground(Gestor_De_Temas.getAccentColor());
         btnSeleccionarImagen.setForeground(Color.WHITE);
         btnSeleccionarImagen.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -572,7 +572,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
 
         JLabel lblError = new JLabel(" ");
         lblError.setForeground(new Color(220, 53, 69));
-        lblError.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblError.setFont(new Font("Inter", Font.BOLD, 13));
         lblError.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
         ((javax.swing.text.AbstractDocument) txtNombre.getDocument()).setDocumentFilter(new LetterFilter(lblError));
@@ -613,7 +613,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
 
         javax.swing.JComponent[] fieldContainers = {txtCodigo, txtNombre, cbCategoria, txtStock, txtPrecio, panelImagen, lblPreview};
         for (javax.swing.JComponent tf : new javax.swing.JComponent[]{txtCodigo, txtNombre, cbCategoria, txtStock, txtPrecio, txtUrlImagen}) {
-            tf.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+            tf.setFont(new Font("Inter", Font.PLAIN, 15));
             tf.setPreferredSize(new Dimension(280, 38));
             tf.addKeyListener(keyNav);
             if (tf instanceof JTextField) {
@@ -636,7 +636,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
         };
         
         for (int i = 0; i < labels.length; i++) {
-            labels[i].setFont(new Font("Segoe UI", Font.BOLD, 15));
+            labels[i].setFont(new Font("Inter", Font.BOLD, 15));
             labels[i].setForeground(Gestor_De_Temas.getTextColor());
             
             gbc.gridx = 0; gbc.gridy = i;
@@ -665,7 +665,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
             }
         };
         btnGuardar.setContentAreaFilled(false); btnGuardar.setBorderPainted(false); btnGuardar.setForeground(Color.WHITE);
-        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 15)); btnGuardar.setFocusPainted(false);
+        btnGuardar.setFont(new Font("Inter", Font.BOLD, 15)); btnGuardar.setFocusPainted(false);
         btnGuardar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnGuardar.setPreferredSize(new Dimension(110, 38));
         btnGuardar.setEnabled(false);
@@ -682,7 +682,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
             }
         };
         btnCancelar.setContentAreaFilled(false); btnCancelar.setBorderPainted(false); btnCancelar.setForeground(Color.WHITE);
-        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 15)); btnCancelar.setFocusPainted(false);
+        btnCancelar.setFont(new Font("Inter", Font.BOLD, 15)); btnCancelar.setFocusPainted(false);
         btnCancelar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnCancelar.setPreferredSize(new Dimension(110, 38));
         addHoverEffect(btnCancelar, new Color(220, 53, 69), new Color(235, 75, 90));

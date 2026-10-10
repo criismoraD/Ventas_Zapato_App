@@ -146,7 +146,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
         JLabel lblChartTitle = new JLabel("Ventas Últimos 7 Días", SwingConstants.CENTER);
-        lblChartTitle.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblChartTitle.setFont(new Font("Inter", Font.BOLD, 15));
         lblChartTitle.setForeground(Gestor_De_Temas.getTextColor());
         barrasWrapper.add(lblChartTitle, java.awt.BorderLayout.NORTH);
         barrasWrapper.add(crearGraficoBarras(), java.awt.BorderLayout.CENTER);
@@ -230,7 +230,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
                     // Valor encima de la barra (solo cuando la animación terminó)
                     if (progreso[0] >= 1.0 && amount > 0) {
                         g2.setColor(Gestor_De_Temas.getAccentColor().darker());
-                        g2.setFont(new Font("Segoe UI", Font.BOLD, 10));
+                        g2.setFont(new Font("Inter", Font.BOLD, 10));
                         String valStr = String.format("%.0f", amount);
                         int strW = g2.getFontMetrics().stringWidth(valStr);
                         g2.drawString(valStr, (getWidth() - strW) / 2, yPos - 3);
@@ -242,7 +242,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
 
             JLabel lblDay = new JLabel(dayLabel, SwingConstants.CENTER);
             lblDay.setForeground(Gestor_De_Temas.getMutedColor());
-            lblDay.setFont(new Font("Segoe UI", Font.BOLD, 11));
+            lblDay.setFont(new Font("Inter", Font.BOLD, 11));
             lblDay.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
 
             dayCol.add(bar, java.awt.BorderLayout.CENTER);
@@ -279,7 +279,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         ));
 
         JLabel title = new JLabel("Top 5 Productos", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        title.setFont(new Font("Inter", Font.BOLD, 15));
         title.setForeground(Gestor_De_Temas.getTextColor());
         wrapper.add(title, BorderLayout.NORTH);
 
@@ -304,7 +304,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
                     g2.setColor(Color.LIGHT_GRAY);
                     g2.fillOval(x, y, size, size);
                     g2.setColor(Color.WHITE);
-                    g2.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                    g2.setFont(new Font("Inter", Font.BOLD, 14));
                     g2.drawString("Sin datos", getWidth() / 2 - 30, getHeight() / 2);
                     g2.dispose();
                     return;
@@ -346,7 +346,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
                 colorBox.setPreferredSize(new Dimension(10, 10));
                 
                 JLabel lblName = new JLabel(String.format("%s - %d (%.0f%%)", name, qty, pct));
-                lblName.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                lblName.setFont(new Font("Inter", Font.PLAIN, 11));
                 lblName.setForeground(Gestor_De_Temas.getTextColor());
 
                 itemRow.add(colorBox);
@@ -371,14 +371,14 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         ));
 
         JLabel title = new JLabel("Top 5 Más Vendidos", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        title.setFont(new Font("Inter", Font.BOLD, 15));
         title.setForeground(Gestor_De_Temas.getTextColor());
         wrapper.add(title, BorderLayout.NORTH);
 
         if (datos.isEmpty()) {
             JLabel lblVacio = new JLabel("Sin ventas registradas", SwingConstants.CENTER);
             lblVacio.setForeground(Gestor_De_Temas.getMutedColor());
-            lblVacio.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            lblVacio.setFont(new Font("Inter", Font.PLAIN, 13));
             wrapper.add(lblVacio, BorderLayout.CENTER);
             return wrapper;
         }
@@ -405,7 +405,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
 
             // Número de posición
             JLabel lblPos = new JLabel("#" + (i + 1));
-            lblPos.setFont(new Font("Georgia", Font.BOLD, 16));
+            lblPos.setFont(new Font("Inter", Font.BOLD, 16));
             lblPos.setForeground(i == 0 ? new Color(200, 150, 30) :   // oro
                                  i == 1 ? new Color(140, 140, 140) :   // plata
                                  i == 2 ? new Color(160, 100, 50)  :   // bronce
@@ -419,11 +419,11 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
 
             String nombreCorto = nombre.length() > 18 ? nombre.substring(0, 18) + "…" : nombre;
             JLabel lblNombre = new JLabel(nombreCorto);
-            lblNombre.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            lblNombre.setFont(new Font("Inter", Font.BOLD, 13));
             lblNombre.setForeground(Gestor_De_Temas.getTextColor());
 
             JLabel lblCat = new JLabel(categoria);
-            lblCat.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            lblCat.setFont(new Font("Inter", Font.PLAIN, 11));
             lblCat.setForeground(Gestor_De_Temas.getMutedColor());
 
             infoPanel.add(lblNombre);
@@ -435,7 +435,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
             rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
 
             JLabel lblCantidad = new JLabel(cantidad + " uds", SwingConstants.RIGHT);
-            lblCantidad.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            lblCantidad.setFont(new Font("Inter", Font.BOLD, 13));
             lblCantidad.setForeground(Gestor_De_Temas.getAccentColor());
             lblCantidad.setAlignmentX(1.0f);
 
@@ -531,7 +531,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         ));
 
         JLabel title = new JLabel("Distribución de Almacén", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        title.setFont(new Font("Inter", Font.BOLD, 15));
         title.setForeground(Gestor_De_Temas.getTextColor());
         wrapper.add(title, BorderLayout.NORTH);
 
@@ -617,7 +617,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
                 // Total en el centro (solo al terminar)
                 if (progresoDonut[0] >= 1.0) {
                     g2.setColor(Gestor_De_Temas.getTextColor());
-                    g2.setFont(new Font("Segoe UI", Font.BOLD, 18));
+                    g2.setFont(new Font("Inter", Font.BOLD, 18));
                     String totStr = String.valueOf(total);
                     int sw = g2.getFontMetrics().stringWidth(totStr);
                     g2.drawString(totStr, getWidth() / 2 - sw / 2, getHeight() / 2 + 5);
@@ -668,7 +668,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
             int cant = (Integer) item[1];
             double pct = total > 0 ? ((double) cant / total) * 100 : 0;
             JLabel lblName = new JLabel(String.format("%s: %d (%.0f%%)", item[0], cant, pct));
-            lblName.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            lblName.setFont(new Font("Inter", Font.PLAIN, 11));
             lblName.setForeground(Gestor_De_Temas.getTextColor());
 
             itemRow.add(colorBox);
@@ -694,7 +694,7 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         }
 
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        tabbedPane.setFont(new Font("Inter", Font.BOLD, 16));
         
         JTable tableTx = crearTablaEstilizada(modelTransacciones, "Transacciones");
 
@@ -750,11 +750,11 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
         table.setRowHeight(40);
         table.setBackground(Gestor_De_Temas.getPanelBgColor());
         table.setForeground(Gestor_De_Temas.getTextColor());
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        table.setFont(new Font("Inter", Font.PLAIN, 15));
         table.setGridColor(new Color(230, 225, 215));
         table.getTableHeader().setBackground(Gestor_De_Temas.getAccentColor());
         table.getTableHeader().setForeground(Color.WHITE);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 15));
+        table.getTableHeader().setFont(new Font("Inter", Font.BOLD, 15));
         table.getTableHeader().setPreferredSize(new Dimension(100, 35));
 
         javax.swing.table.DefaultTableCellRenderer cellRenderer = new javax.swing.table.DefaultTableCellRenderer() {
@@ -769,14 +769,14 @@ public class Panel_De_Reportes extends javax.swing.JPanel {
                 }
                 
                 c.setForeground(Color.BLACK);
-                setFont(new Font("Segoe UI", Font.PLAIN, 15));
+                setFont(new Font("Inter", Font.PLAIN, 15));
 
                 if (tipo.equals("Transacciones") && column == 3) {
                     String status = value.toString();
                     if (status.equalsIgnoreCase("Completado")) c.setForeground(new Color(40, 140, 60));
                     else if (status.equalsIgnoreCase("Cancelado")) c.setForeground(new Color(200, 50, 50));
                     else c.setForeground(Color.GRAY);
-                    setFont(new Font("Segoe UI", Font.BOLD, 15));
+                    setFont(new Font("Inter", Font.BOLD, 15));
                 } 
                 return c;
             }
@@ -854,7 +854,7 @@ class ProgressRingKPI extends javax.swing.JPanel {
         g2.draw(new java.awt.geom.Arc2D.Double(rx, ry, ringSize, ringSize, 90, -angle, java.awt.geom.Arc2D.OPEN));
 
         // Dibujar porcentaje numérico en el centro del anillo
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        g2.setFont(new Font("Inter", Font.BOLD, 12));
         g2.setColor(Gestor_De_Temas.getTextColor());
         String pctStr = String.format("%.0f%%", percentage * 100);
         int swPct = g2.getFontMetrics().stringWidth(pctStr);
@@ -864,17 +864,17 @@ class ProgressRingKPI extends javax.swing.JPanel {
         int tx = rx + ringSize + 15;
         
         // Título del KPI
-        g2.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        g2.setFont(new Font("Inter", Font.BOLD, 13));
         g2.setColor(Gestor_De_Temas.getMutedColor());
         g2.drawString(title, tx, 32);
 
         // Valor Numérico Destacado (Georgia)
-        g2.setFont(new Font("Georgia", Font.BOLD, 22));
+        g2.setFont(new Font("Inter", Font.BOLD, 22));
         g2.setColor(Gestor_De_Temas.getTextColor());
         g2.drawString(displayValue, tx, 56);
 
         // Subtexto de la meta
-        g2.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        g2.setFont(new Font("Inter", Font.PLAIN, 11));
         g2.setColor(Gestor_De_Temas.getMutedColor());
         String targetStr = String.format("Meta: " + (title.contains("Ingresos") ? "S/ %.2f" : "%.0f u."), maxValue);
         g2.drawString(targetStr, tx, 75);

@@ -92,13 +92,13 @@ public class Dialogo_De_Pago extends JDialog {
         headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
         JLabel lblTitle = new JLabel("PASO 2 DE 2 · MÉTODO DE PAGO");
-        lblTitle.setFont(new Font("Georgia", Font.BOLD, 18));
+        lblTitle.setFont(new Font("Inter", Font.BOLD, 18));
         lblTitle.setForeground(Gestor_De_Temas.getTextColor());
         headerPanel.add(lblTitle, BorderLayout.WEST);
 
         // Mostrar Total a pagar de forma imponente
         JLabel lblTotalHeader = new JLabel(String.format("Total: S/ %.2f", totalAPagar));
-        lblTotalHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTotalHeader.setFont(new Font("Inter", Font.BOLD, 22));
         lblTotalHeader.setForeground(Gestor_De_Temas.getAccentColor());
         headerPanel.add(lblTotalHeader, BorderLayout.EAST);
 
@@ -150,7 +150,7 @@ public class Dialogo_De_Pago extends JDialog {
         JButton btnCancelar = new JButton("Cancelar (Esc)");
         btnCancelar.setIcon(new Icono_Elegante(Icono_Elegante.Type.CLOSE, 14));
         btnCancelar.setIconTextGap(8);
-        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnCancelar.setFont(new Font("Inter", Font.BOLD, 14));
         btnCancelar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnCancelar.addActionListener(e -> dispose());
         actionPanel.add(btnCancelar);
@@ -169,7 +169,7 @@ public class Dialogo_De_Pago extends JDialog {
 
     private JButton crearBotonMetodo(String text, String imageResourcePath, Icono_Elegante.Type fallbackIcon) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("Georgia", Font.BOLD, 15));
+        btn.setFont(new Font("Inter", Font.BOLD, 15));
         btn.setForeground(Gestor_De_Temas.getMutedColor());
         btn.setBackground(Gestor_De_Temas.getNavColor());
         
@@ -269,7 +269,7 @@ public class Dialogo_De_Pago extends JDialog {
 
         // Header interno
         JLabel lblHeader = new JLabel("PAGO EN EFECTIVO - Ingresa el monto recibido");
-        lblHeader.setFont(new Font("Georgia", Font.BOLD, 16));
+        lblHeader.setFont(new Font("Inter", Font.BOLD, 16));
         lblHeader.setForeground(Gestor_De_Temas.getAccentColor());
         card.add(lblHeader, BorderLayout.NORTH);
 
@@ -283,12 +283,12 @@ public class Dialogo_De_Pago extends JDialog {
         // Fila 1: Campo de Monto Recibido
         gbc.gridy = 0;
         JLabel lblRecibido = new JLabel("Monto Recibido (S/):");
-        lblRecibido.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblRecibido.setFont(new Font("Inter", Font.BOLD, 14));
         body.add(lblRecibido, gbc);
 
         gbc.gridy = 1;
         txtMontoRecibido = new JTextField();
-        txtMontoRecibido.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        txtMontoRecibido.setFont(new Font("Inter", Font.BOLD, 24));
         txtMontoRecibido.setPreferredSize(new Dimension(0, 50));
         txtMontoRecibido.setHorizontalAlignment(JTextField.RIGHT);
         txtMontoRecibido.setBorder(BorderFactory.createCompoundBorder(
@@ -331,7 +331,7 @@ public class Dialogo_De_Pago extends JDialog {
         for (int i = 0; i < denominaciones.length; i++) {
             final double valor = denominaciones[i];
             JButton btnDenom = new JButton(labels[i]);
-            btnDenom.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            btnDenom.setFont(new Font("Inter", Font.BOLD, 13));
             btnDenom.setCursor(new Cursor(Cursor.HAND_CURSOR));
             btnDenom.addActionListener(e -> {
                 txtMontoRecibido.setText(String.format("%.2f", valor).replace(",", "."));
@@ -344,7 +344,7 @@ public class Dialogo_De_Pago extends JDialog {
         // Fila 3: Vuelto Display
         gbc.gridy = 3;
         lblVueltoDisplay = new JLabel("Vuelto: S/ 0.00", SwingConstants.CENTER);
-        lblVueltoDisplay.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblVueltoDisplay.setFont(new Font("Inter", Font.BOLD, 28));
         lblVueltoDisplay.setOpaque(true);
         lblVueltoDisplay.setBackground(Gestor_De_Temas.getNavColor());
         lblVueltoDisplay.setForeground(new Color(220, 53, 69)); // Inicialmente en rojo ("Falta")
@@ -360,7 +360,7 @@ public class Dialogo_De_Pago extends JDialog {
         btnConfirmarEfectivo = new JButton("CONFIRMAR E INTEGRAR VENTA");
         btnConfirmarEfectivo.setIcon(new Icono_Elegante(Icono_Elegante.Type.CREDIT_CARD, 18, Color.WHITE));
         btnConfirmarEfectivo.setIconTextGap(8);
-        btnConfirmarEfectivo.setFont(new Font("Georgia", Font.BOLD, 15));
+        btnConfirmarEfectivo.setFont(new Font("Inter", Font.BOLD, 15));
         btnConfirmarEfectivo.setForeground(Color.WHITE);
         btnConfirmarEfectivo.setBackground(new Color(79, 133, 87));
         btnConfirmarEfectivo.setPreferredSize(new Dimension(0, 50));
@@ -406,7 +406,7 @@ public class Dialogo_De_Pago extends JDialog {
         card.setOpaque(false);
 
         JLabel lblHeader = new JLabel("PAGO CON TARJETA (CRÉDITO/DÉBITO) - Verifica y confirma");
-        lblHeader.setFont(new Font("Georgia", Font.BOLD, 16));
+        lblHeader.setFont(new Font("Inter", Font.BOLD, 16));
         lblHeader.setForeground(Gestor_De_Temas.getAccentColor());
         card.add(lblHeader, BorderLayout.NORTH);
 
@@ -425,12 +425,12 @@ public class Dialogo_De_Pago extends JDialog {
 
         gbc.gridy = 1;
         JLabel lblNro = new JLabel("Código de autorización / voucher del POS:");
-        lblNro.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblNro.setFont(new Font("Inter", Font.BOLD, 14));
         body.add(lblNro, gbc);
 
         gbc.gridy = 2;
         txtRefTarjeta = new JTextField();
-        txtRefTarjeta.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        txtRefTarjeta.setFont(new Font("Inter", Font.PLAIN, 18));
         txtRefTarjeta.setPreferredSize(new Dimension(0, 45));
         txtRefTarjeta.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(Gestor_De_Temas.getBorderColor(), 1, true),
@@ -440,12 +440,12 @@ public class Dialogo_De_Pago extends JDialog {
 
         gbc.gridy = 3;
         JLabel lblTerminal = new JLabel("Identificador del POS (opcional):");
-        lblTerminal.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTerminal.setFont(new Font("Inter", Font.BOLD, 14));
         body.add(lblTerminal, gbc);
 
         gbc.gridy = 4;
         txtTerminalId = new JTextField();
-        txtTerminalId.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        txtTerminalId.setFont(new Font("Inter", Font.PLAIN, 18));
         txtTerminalId.setPreferredSize(new Dimension(0, 45));
         txtTerminalId.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(Gestor_De_Temas.getBorderColor(), 1, true),
@@ -458,7 +458,7 @@ public class Dialogo_De_Pago extends JDialog {
         btnConfirmarTarjeta = new JButton("CONFIRMAR E INTEGRAR VENTA");
         btnConfirmarTarjeta.setIcon(new Icono_Elegante(Icono_Elegante.Type.CREDIT_CARD, 18, Color.WHITE));
         btnConfirmarTarjeta.setIconTextGap(8);
-        btnConfirmarTarjeta.setFont(new Font("Georgia", Font.BOLD, 15));
+        btnConfirmarTarjeta.setFont(new Font("Inter", Font.BOLD, 15));
         btnConfirmarTarjeta.setForeground(Color.WHITE);
         btnConfirmarTarjeta.setBackground(new Color(79, 133, 87));
         btnConfirmarTarjeta.setPreferredSize(new Dimension(0, 50));
@@ -475,7 +475,7 @@ public class Dialogo_De_Pago extends JDialog {
         card.setOpaque(false);
 
         lblDigitalInstruction = new JLabel("PAGO DIGITAL (YAPE/PLIN) - Realiza y verifica el pago");
-        lblDigitalInstruction.setFont(new Font("Georgia", Font.BOLD, 16));
+        lblDigitalInstruction.setFont(new Font("Inter", Font.BOLD, 16));
         lblDigitalInstruction.setForeground(Gestor_De_Temas.getAccentColor());
         card.add(lblDigitalInstruction, BorderLayout.NORTH);
 
@@ -501,11 +501,11 @@ public class Dialogo_De_Pago extends JDialog {
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
         inputPanel.setOpaque(false);
         JLabel lblRef = new JLabel("Código de Referencia / Operación:");
-        lblRef.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblRef.setFont(new Font("Inter", Font.BOLD, 14));
         inputPanel.add(lblRef, BorderLayout.NORTH);
 
         txtRefDigital = new JTextField();
-        txtRefDigital.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        txtRefDigital.setFont(new Font("Inter", Font.PLAIN, 18));
         txtRefDigital.setPreferredSize(new Dimension(0, 45));
         txtRefDigital.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(Gestor_De_Temas.getBorderColor(), 1, true),
@@ -519,7 +519,7 @@ public class Dialogo_De_Pago extends JDialog {
         btnConfirmarDigital = new JButton("CONFIRMAR E INTEGRAR VENTA");
         btnConfirmarDigital.setIcon(new Icono_Elegante(Icono_Elegante.Type.CREDIT_CARD, 18, Color.WHITE));
         btnConfirmarDigital.setIconTextGap(8);
-        btnConfirmarDigital.setFont(new Font("Georgia", Font.BOLD, 15));
+        btnConfirmarDigital.setFont(new Font("Inter", Font.BOLD, 15));
         btnConfirmarDigital.setForeground(Color.WHITE);
         btnConfirmarDigital.setBackground(new Color(79, 133, 87));
         btnConfirmarDigital.setPreferredSize(new Dimension(0, 50));

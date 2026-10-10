@@ -266,7 +266,7 @@ public class Panel_Principal extends JFrame {
         btnMinimizeWindow.addActionListener(e -> setState(Frame.ICONIFIED));
 
         btnCloseX = new JButton("X");
-        btnCloseX.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnCloseX.setFont(new Font("Inter", Font.BOLD, 16));
         btnCloseX.setForeground(Color.WHITE);
         btnCloseX.setBackground(CLOSE_BG);
         btnCloseX.setOpaque(true);

@@ -60,11 +60,11 @@ public class Dialogo_De_Comprador extends JDialog {
         encabezado.setBorder(new EmptyBorder(18, 22, 18, 22));
         JLabel titulo = new JLabel("PASO 1 DE 2 · DATOS DEL COMPRADOR");
         titulo.setForeground(Gestor_De_Temas.getTextColor());
-        titulo.setFont(new Font("Georgia", Font.BOLD, 19));
+        titulo.setFont(new Font("Inter", Font.BOLD, 19));
         encabezado.add(titulo, BorderLayout.WEST);
         JLabel ayuda = new JLabel("Opcional");
         ayuda.setForeground(Gestor_De_Temas.getAccentColor());
-        ayuda.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        ayuda.setFont(new Font("Inter", Font.BOLD, 13));
         encabezado.add(ayuda, BorderLayout.EAST);
         raiz.add(encabezado, BorderLayout.NORTH);
 
@@ -72,7 +72,7 @@ public class Dialogo_De_Comprador extends JDialog {
         contenido.setOpaque(false);
         contenido.setBorder(new EmptyBorder(10, 24, 0, 24));
         lblEstado.setForeground(Gestor_De_Temas.getMutedColor());
-        lblEstado.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblEstado.setFont(new Font("Inter", Font.PLAIN, 13));
         contenido.add(lblEstado, BorderLayout.NORTH);
 
         JPanel formulario = new JPanel(new GridBagLayout());
@@ -116,7 +116,7 @@ public class Dialogo_De_Comprador extends JDialog {
         c.gridwidth = 1;
         JLabel label = new JLabel(etiqueta);
         label.setForeground(Gestor_De_Temas.getTextColor());
-        label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        label.setFont(new Font("Inter", Font.BOLD, 13));
         panel.add(label, c);
 
         c.gridx = 1;
@@ -134,7 +134,7 @@ public class Dialogo_De_Comprador extends JDialog {
     }
 
     private void prepararCampo(JComponent componente) {
-        componente.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        componente.setFont(new Font("Inter", Font.PLAIN, 14));
         componente.setPreferredSize(new Dimension(0, 34));
         if (componente instanceof JTextField) {
             componente.setBackground(Gestor_De_Temas.getPanelBgColor());
@@ -146,7 +146,7 @@ public class Dialogo_De_Comprador extends JDialog {
 
     private JButton crearBoton(String texto, Color fondo) {
         JButton boton = new JButton(texto);
-        boton.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        boton.setFont(new Font("Inter", Font.BOLD, 12));
         boton.setForeground(Color.WHITE);
         boton.setBackground(fondo);
         boton.setFocusPainted(false);
