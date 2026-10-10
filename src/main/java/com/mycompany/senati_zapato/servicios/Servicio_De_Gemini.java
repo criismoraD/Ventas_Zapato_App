@@ -24,6 +24,7 @@ public class Servicio_De_Gemini {
     private java.util.function.BiFunction<String, Integer, String> onAddCart;
     private java.util.function.Supplier<String> onCheckout;
     private java.util.function.Supplier<String> onCancel;
+    private java.util.function.Supplier<String> onVentaGeneral;
     private java.util.function.Consumer<Boolean> onSetDarkMode;
     // Lleva al modulo Ventas y filtra el catalogo por lo que pregunto el usuario
     // (color, precio, talla, categoria). Devuelve un resumen legible para el modelo.
@@ -43,6 +44,10 @@ public class Servicio_De_Gemini {
 
     public void setOnCancel(java.util.function.Supplier<String> onCancel) {
         this.onCancel = onCancel;
+    }
+
+    public void setOnVentaGeneral(java.util.function.Supplier<String> onVentaGeneral) {
+        this.onVentaGeneral = onVentaGeneral;
     }
 
     public void setOnSetDarkMode(java.util.function.Consumer<Boolean> onSetDarkMode) {
@@ -254,6 +259,9 @@ public class Servicio_De_Gemini {
         "Si el usuario pregunta por colores, por precios, por los mas baratos o caros, por una talla o por que productos hay de cierta categoria, " +
         "usa obligatoriamente la herramienta mostrar_en_ventas con el texto literal de su consulta: eso abre el modulo Ventas y deja el catalogo ya filtrado, " +
         "y tu debes responder con el resultado que te devuelva, mencionando nombres y precios concretos. " +
+        "Cuando el usuario pida o mencione una categoria (mocasines, botas, zapatos casuales, zapatos de vestir, zapatos elegantes o todo el catalogo), " +
+        "usa tambien mostrar_en_ventas: normaliza el termino al nombre exacto de categoria - Botas, Mocasines, Zapatos de vestir, Zapatos casuales - " +
+        "y cuando quiera verlo todo escribe 'ver todo el catalogo'; luego responde con lo que te devuelva la herramienta. " +
         "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
         "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
         "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
@@ -261,6 +269,8 @@ public class Servicio_De_Gemini {
         "primero anuncia que para completar la venta debe registrar los datos del comprador o elegir venta general; " +
         "pregunta «¿Desea registrar los datos del comprador?» y, si acepta, solicita «Indíqueme el número de DNI» (o RUC si corresponde), " +
         "pide completar nombres y los demás campos, y confirma que los datos quedaron listos; si elige venta general, confirma que se omitirá el registro; " +
+        "cuando el usuario la pida o acepte omitir el registro («venta general», «sin datos», «omítelo»), usa obligatoriamente la herramienta venta_general " +
+        "para confirmarla en el formulario abierto, y al recibir su resultado indica «Ahora selecciona el método de pago» en la ventana que se abrió; " +
         "solo después indica que debe elegir el método de pago, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +
         "nunca afirmes que el pago ya fue realizado hasta que el sistema confirme la venta. Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
         "Si el usuario pide activar o desactivar el modo oscuro, modo noche o modo claro, usa la herramienta cambiar_modo_oscuro.";
@@ -524,6 +534,19 @@ public class Servicio_De_Gemini {
                 .functionDeclarations(FunctionDeclaration.builder()
                         .name("procesar_pago")
                         .description("Inicia el cobro de la venta actual y abre el panel donde se elige el método, se verifican los datos y se confirma el pago")
+                        .parameters(Schema.builder()
+                                .type(new Type(Type.Known.OBJECT))
+                                .properties(Map.of())
+                                .build())
+                        .build())
+                .build());
+
+        // venta_general
+        toolList.add(Tool.builder()
+                .functionDeclarations(FunctionDeclaration.builder()
+                        .name("venta_general")
+                        .description("Confirma «Venta general» en el formulario abierto del comprador: omite el registro de datos, "
+                                + "cierra ese formulario y abre la selección del método de pago. Úsala cuando el usuario elija u pida omitir los datos del comprador")
                         .parameters(Schema.builder()
                                 .type(new Type(Type.Known.OBJECT))
                                 .properties(Map.of())
@@ -798,6 +821,12 @@ public class Servicio_De_Gemini {
                     return onCheckout.get();
                 }
                 return "Error: callback de procesar pago no configurado.";
+            }
+            case "venta_general": {
+                if (onVentaGeneral != null) {
+                    return onVentaGeneral.get();
+                }
+                return "Error: callback de venta general no configurado.";
             }
             case "cancelar_orden": {
                 if (onCancel != null) {

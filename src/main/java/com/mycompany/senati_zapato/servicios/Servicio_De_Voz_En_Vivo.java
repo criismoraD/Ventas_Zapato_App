@@ -60,6 +60,37 @@ public class Servicio_De_Voz_En_Vivo {
                 frame.Establecer_Modo_Oscuro(activar);
             }
         });
+        // Esta voz usa su propia instancia de Servicio_De_Gemini, por lo que sin este
+        // callback mostrar_en_ventas devolvia "callback no configurado" y la pantalla
+        // nunca cambiaba aunque el asistente anunciaba el filtro.
+        this.toolService.setOnShowInSales(consulta -> {
+            if (frame == null) return "No se pudo acceder a la ventana principal.";
+            final String[] r = new String[1];
+            try {
+                SwingUtilities.invokeAndWait(() -> r[0] = frame.Mostrar_En_Ventas(normalizarConsultaDeCatalogo(consulta)));
+            } catch (Exception e) {
+                return "No se pudo mostrar el catalogo en pantalla: " + e.getMessage();
+            }
+            return r[0];
+        });
+    }
+
+    /**
+     * Tolera typos del reconocimiento de voz: "zapatos cassuales" -> "zapatos casuales".
+     * Si no reconoce una categoria, pasa la consulta tal cual (color, talla, precio...).
+     */
+    private String normalizarConsultaDeCatalogo(String consulta) {
+        if (consulta == null) return "";
+        String t = java.text.Normalizer.normalize(consulta.toLowerCase(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        String plano = t.replaceAll("(.)\\1+", "$1");
+        if (plano.contains("mocasin")) return "mocasines";
+        if (plano.matches(".*\\bbot(as|os)\\b.*")) return "botas";
+        if (plano.contains("casual")) return "zapatos casuales";
+        if (plano.contains("vestir") || plano.contains("formal") || plano.contains("elegante")) return "zapatos de vestir";
+        boolean mencionaCalzado = plano.matches(".*\\b(zapato|zapatos|zapatilla|zapatillas|calzado|catalogo|categoria)\\b.*");
+        if (mencionaCalzado && plano.matches(".*\\btodos?\\b.*")) return "ver todo el catalogo";
+        return consulta;
     }
 
     public boolean Esta_En_Ejecucion() {
@@ -334,6 +365,16 @@ public class Servicio_De_Voz_En_Vivo {
                 SwingUtilities.invokeAndWait(() -> result[0] = frame.Abrir_Panel_De_Pago());
             } catch (Exception e) {
                 return "No se pudo abrir el panel de pago: " + e.getMessage();
+            }
+            return result[0];
+        }
+        if ("venta_general".equals(name)) {
+            if (frame == null) return "No se pudo acceder a la ventana principal.";
+            final String[] result = new String[1];
+            try {
+                SwingUtilities.invokeAndWait(() -> result[0] = frame.Seleccionar_Venta_General());
+            } catch (Exception e) {
+                return "No se pudo confirmar la venta general: " + e.getMessage();
             }
             return result[0];
         }

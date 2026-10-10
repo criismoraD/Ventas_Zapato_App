@@ -798,6 +798,8 @@ public class Panel_De_Ventas extends JPanel {
 
     /** Evita que el asistente encadene varios cobros y tape el diálogo de pago. */
     private boolean cobroEnCurso = false;
+    /** Formulario del comprador abierto actualmente, si lo hay (lo usa el asistente). */
+    private Dialogo_De_Comprador dialogoCompradorAbierto;
 
     public String Abrir_Panel_De_Pago() {
         if (tableModel.getRowCount() == 0) {
@@ -1046,6 +1048,7 @@ public class Panel_De_Ventas extends JPanel {
             Dialogo_De_Comprador compradorDialog = new Dialogo_De_Comprador(parentFrame);
             // La ventana principal es alwaysOnTop: fuerza el formulario al frente.
             compradorDialog.setAlwaysOnTop(true);
+            dialogoCompradorAbierto = compradorDialog;
             compradorDialog.setVisible(true);
             if (!compradorDialog.continuar()) {
                 registrarDiagnosticoCobro("Formulario del comprador cancelado por el usuario.");
@@ -1064,11 +1067,29 @@ public class Panel_De_Ventas extends JPanel {
                     "No se pudo iniciar el cobro:\n" + ex,
                     "Error de cobro", JOptionPane.ERROR_MESSAGE);
         } finally {
+            dialogoCompradorAbierto = null;
             // Si no se abrió el pago, el flag se libera aquí para permitir reintentar.
             if (!encoloPago) {
                 cobroEnCurso = false;
             }
         }
+    }
+
+    /**
+     * Confirma «Venta general» en el formulario del comprador cuando el asistente lo pide.
+     * Devuelve un mensaje para que el modelo lo retransmita al usuario.
+     */
+    public String Seleccionar_Venta_General() {
+        Dialogo_De_Comprador dialogo = dialogoCompradorAbierto;
+        if (dialogo == null || !dialogo.isDisplayable()) {
+            registrarDiagnosticoCobro("Venta general pedida sin formulario abierto.");
+            return "No hay un formulario del comprador abierto. Primero pide cobrar; "
+                    + "cuando se abra el formulario, confirma «Venta general» para pasar al método de pago.";
+        }
+        dialogo.aplicarVentaGeneral();
+        registrarDiagnosticoCobro("Venta general confirmada desde el asistente.");
+        return "Venta general confirmada. El formulario se cerró y se abrió la selección del método de pago: "
+                + "elige Efectivo, Tarjeta, Yape, Plin o Transferencia para continuar.";
     }
 
     private void mostrarDialogoDePago(Frame parentFrame, Venta venta) {

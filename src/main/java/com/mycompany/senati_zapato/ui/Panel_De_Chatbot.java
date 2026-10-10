@@ -114,6 +114,22 @@ public class Panel_De_Chatbot extends JPanel {
             }
             return "Error: referencia a la ventana principal no configurada.";
         });
+        geminiService.setOnVentaGeneral(() -> {
+            if (frameRef != null) {
+                final String[] res = new String[1];
+                try {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        res[0] = frameRef.Seleccionar_Venta_General();
+                    } else {
+                        SwingUtilities.invokeAndWait(() -> res[0] = frameRef.Seleccionar_Venta_General());
+                    }
+                } catch (Exception e) {
+                    res[0] = frameRef.Seleccionar_Venta_General();
+                }
+                return res[0];
+            }
+            return "Error: referencia a la ventana principal no configurada.";
+        });
         geminiService.setOnShowInSales(consulta -> {
             if (frameRef != null) {
                 final String[] res = new String[1];
@@ -820,6 +836,22 @@ public class Panel_De_Chatbot extends JPanel {
             // Si no se encontró mediante regex, dejamos que continúe el flujo hacia el LLM (Gemini) para que analice y busque
         }
 
+        // Peticion explicita de categoria de zapatos: filtra el catalogo en Ventas de una vez,
+        // sin esperar al modelo y sin que la deteccion de navegacion lo mande a otro modulo
+        // ("muestrame zapatos mocasines" antes caia en el modulo Gestor por contener "zapato").
+        String categoriaSolicitada = detectarCategoriaDeZapatos(txt);
+        if (categoriaSolicitada != null && frameRef != null) {
+            String resultado = frameRef.Mostrar_En_Ventas(categoriaSolicitada);
+            messages.add(new ChatMsg(true, resultado, ""));
+            chatBody.revalidate();
+            chatBody.repaint();
+            scrollToBottom();
+            pendingImage = null;
+            pendingImageName = null;
+            pendingImageMimeType = "image/jpeg";
+            return;
+        }
+
         if (targetModule != null && frameRef != null) {
             SwingUtilities.invokeLater(() -> frameRef.Cambiar_Pestana(targetModule));
             messages.add(new ChatMsg(true, "Te he llevado al módulo de " + moduleDisplayName(targetModule) + ".", ""));
@@ -940,6 +972,29 @@ public class Panel_De_Chatbot extends JPanel {
         if (text == null) return "";
         return java.text.Normalizer.normalize(text.toLowerCase(), java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
+    }
+
+    /**
+     * Detecta si el usuario pide ver una categoria de zapatos (mocasines, botas,
+     * casuales, vestir o todo el catalogo). Devuelve el termino que debe aplicar
+     * el filtro de Ventas, o null si no es una peticion de categoria.
+     */
+    private String detectarCategoriaDeZapatos(String txt) {
+        if (txt == null || txt.trim().isEmpty()) return null;
+        String t = normalizeUserText(txt);
+        // Tolerancia a typos con letras repetidas: "cassuales" -> "casuales", "mocassines" -> "mocasines".
+        String plano = t.replaceAll("(.)\\1+", "$1");
+        // Órdenes de carrito o de compra: las deja pasar al flujo normal (Gemini / agregar_carrito).
+        if (plano.matches(".*\\b(agrega|agregar|agrego|anade|anadir|anado|pon|poner|mete|meter|quita|quitar|elimina|eliminar|compra|comprar)\\b.*")) {
+            return null;
+        }
+        boolean mencionaCalzado = plano.matches(".*\\b(zapato|zapatos|zapatilla|zapatillas|calzado|catalogo|categoria)\\b.*");
+        if (plano.contains("mocasin")) return "mocasines";
+        if (plano.matches(".*\\bbot(as|os)\\b.*")) return "botas";
+        if (plano.contains("casual")) return "zapatos casuales";
+        if (plano.contains("vestir") || plano.contains("formal") || plano.contains("elegante")) return "zapatos de vestir";
+        if (mencionaCalzado && plano.matches(".*\\btodos?\\b.*")) return "ver todo el catalogo";
+        return null;
     }
 
     private String detectNavigationTarget(String text) {

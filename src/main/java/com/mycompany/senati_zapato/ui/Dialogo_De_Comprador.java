@@ -35,6 +35,20 @@ public class Dialogo_De_Comprador extends JDialog {
         return continuar;
     }
 
+    /**
+     * Confirma «Venta general» con la misma acción que el botón del formulario:
+     * cierra este diálogo y el flujo continúa con la selección del método de pago.
+     * Lo usa el asistente cuando el usuario pide omitir los datos del comprador.
+     */
+    public void aplicarVentaGeneral() {
+        if (!isDisplayable()) {
+            return;
+        }
+        lblEstado.setText("Venta general confirmada. Continuará con la selección del método de pago.");
+        continuar = true;
+        dispose();
+    }
+
     private void construirUI() {
         JPanel raiz = new JPanel(new BorderLayout(0, 12));
         raiz.setBackground(Gestor_De_Temas.getBgColor());
@@ -79,11 +93,7 @@ public class Dialogo_De_Comprador extends JDialog {
         JButton btnGuardar = crearBoton("Guardar y continuar", Gestor_De_Temas.getAccentColor());
         btnGuardar.addActionListener(e -> guardar());
         JButton btnGeneral = crearBoton("Venta general", new Color(105, 105, 105));
-        btnGeneral.addActionListener(e -> {
-            lblEstado.setText("Venta general confirmada. Continuará con la selección del método de pago.");
-            continuar = true;
-            dispose();
-        });
+        btnGeneral.addActionListener(e -> aplicarVentaGeneral());
         JButton btnCancelar = crearBoton("Cancelar cobro", new Color(130, 70, 70));
         btnCancelar.addActionListener(e -> dispose());
 

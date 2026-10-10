@@ -138,6 +138,21 @@ public class Panel_Principal extends JFrame {
         return "No se pudo acceder al módulo de Ventas.";
     }
 
+    /** Confirma «Venta general» en el formulario del comprador (lo usa el asistente). */
+    public String Seleccionar_Venta_General() {
+        Cambiar_Pestana("Ventas");
+        for (Component comp : contentPanel.getComponents()) {
+            Component target = comp;
+            if (comp instanceof javax.swing.JScrollPane) {
+                target = ((javax.swing.JScrollPane) comp).getViewport().getView();
+            }
+            if (target instanceof Panel_De_Ventas) {
+                return ((Panel_De_Ventas) target).Seleccionar_Venta_General();
+            }
+        }
+        return "No se pudo acceder al módulo de Ventas.";
+    }
+
     /** Cambia a Ventas y deja el catálogo filtrado según la consulta del asistente. */
     public String Mostrar_En_Ventas(String consulta) {
         Cambiar_Pestana("Ventas");
