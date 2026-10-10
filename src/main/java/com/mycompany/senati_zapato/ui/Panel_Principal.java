@@ -24,7 +24,7 @@ public class Panel_Principal extends JFrame {
     protected Boton_De_Pestana btnVentas;
     protected Boton_De_Pestana btnGestor;
     protected Boton_De_Pestana btnReportes;
-    protected Boton_De_Pestana btnConfig;
+
     protected JPanel rightPanel;
     protected JButton btnMinimizeWindow;
     protected JButton btnCloseX;
@@ -77,10 +77,8 @@ public class Panel_Principal extends JFrame {
             updateTabSelection(btnGestor);
         } else if ("Reportes".equals(cardName)) {
             updateTabSelection(btnReportes);
-        } else if ("Config".equals(cardName)) {
-            updateTabSelection(btnConfig);
         }
-        
+
         // Sincronización reactiva de datos al alternar pestañas
         for (Component comp : contentPanel.getComponents()) {
             Component target = comp;
@@ -235,13 +233,13 @@ public class Panel_Principal extends JFrame {
         btnVentas   = createTab("Ventas", "Ventas", Icono_Elegante.Type.CART);
         btnGestor   = createTab("Inventario", "Gestor", Icono_Elegante.Type.BOX);
         btnReportes = createTab("Reportes", "Reportes", Icono_Elegante.Type.CHART);
-        btnConfig = createTab("Config", "Config", Icono_Elegante.Type.SAVE);
+
 
         tabsPanel.add(btnInicio);
         tabsPanel.add(btnVentas);
         tabsPanel.add(btnGestor);
         tabsPanel.add(btnReportes);
-        tabsPanel.add(btnConfig);
+
 
         topNavBar.add(tabsPanel, BorderLayout.CENTER);
 
@@ -338,7 +336,7 @@ public class Panel_Principal extends JFrame {
         contentPanel.add(new Panel_De_Ventas(),    "Ventas");
         contentPanel.add(new Panel_De_Inventario(),    "Gestor");
         contentPanel.add(crearScrollWrapper(new Panel_De_Reportes()),  "Reportes");
-        contentPanel.add(crearScrollWrapper(new Panel_De_Configuracion()), "Config");
+
 
         root.add(contentPanel, BorderLayout.CENTER);
 
@@ -560,7 +558,7 @@ public class Panel_Principal extends JFrame {
         btnVentas.setActive(btnVentas == activeBtn);
         btnGestor.setActive(btnGestor == activeBtn);
         btnReportes.setActive(btnReportes == activeBtn);
-        btnConfig.setActive(btnConfig == activeBtn);
+
     }
 
     private void updateThemeToggleButton(JButton btn) {
