@@ -536,14 +536,19 @@ public class Panel_De_Chatbot extends JPanel {
                 g2.setStroke(new BasicStroke(0.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0, dash, 0));
                 g2.drawRoundRect(px + 3, py + 3, pw - 6, ph - 6, ph - 6, ph - 6);
 
-                // Botón Clip (adjuntar imagen)
+                // Botón Imagen (adjuntar imagen del producto)
                 int clipSize = 26;
                 int clipX = px + 10;
                 int clipY = py + (ph - clipSize) / 2;
                 g2.setColor(clipHovered ? Gestor_De_Temas.getAccentColor() : Gestor_De_Temas.getMutedColor());
                 g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g2.drawArc(clipX + 4, clipY + 2, 12, 18, -45, 270);
-                g2.drawLine(clipX + 10, clipY + 11, clipX + 10, clipY + 22);
+                // Marco de foto redondeado
+                g2.drawRoundRect(clipX + 3, clipY + 5, 20, 15, 4, 4);
+                // Sol
+                g2.fillOval(clipX + 7, clipY + 9, 4, 4);
+                // Montaña
+                g2.drawPolyline(new int[]{clipX + 6, clipX + 10, clipX + 14, clipX + 20},
+                        new int[]{clipY + 17, clipY + 12, clipY + 16, clipY + 11}, 4);
                 if (pendingImage != null) {
                     g2.setColor(new Color(79, 133, 87));
                     g2.fillOval(clipX + 16, clipY, 10, 10);
@@ -684,14 +689,15 @@ public class Panel_De_Chatbot extends JPanel {
                     if (status != null && status.startsWith("No se pudo iniciar voz:")) {
                         liveVoiceActive = false;
                         setAssistantStatus("Error de conexión", new Color(255, 220, 220));
+                        addAssistantMessage(status);
                     } else if (status != null && status.contains("detenido")) {
                         setAssistantStatus("Listo", new Color(225, 245, 225));
                     } else if (status != null && status.contains("activo")) {
                         setAssistantStatus("Escuchando...", new Color(225, 245, 225));
+                        addAssistantMessage("🎤 Modo voz activo — háblame.");
                     } else {
                         setAssistantStatus("Conectando...", new Color(255, 240, 200));
                     }
-                    addAssistantMessage(status);
                     repaint();
                 }),
                 text -> SwingUtilities.invokeLater(() -> addUserMessage("[voz] " + text)),
@@ -699,7 +705,6 @@ public class Panel_De_Chatbot extends JPanel {
         );
         liveVoiceActive = true;
         setAssistantStatus("Conectando...", new Color(255, 240, 200));
-        addAssistantMessage("Modo voz activo. Puedes hablarme.");
         liveVoiceService.start();
     }
 

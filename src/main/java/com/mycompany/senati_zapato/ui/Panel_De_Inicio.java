@@ -69,7 +69,7 @@ public class Panel_De_Inicio extends javax.swing.JPanel {
         JPanel kpiPanel = new JPanel();
         kpiPanel.setLayout(new BoxLayout(kpiPanel, BoxLayout.X_AXIS));
         kpiPanel.setOpaque(false);
-        kpiPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
+        kpiPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         kpiPanel.add(crearKpiMini("Ingresos Hoy", String.format("S/ %.2f", kpis[0]), new Color(79, 133, 87), Icono_Elegante.Type.CART));
         kpiPanel.add(Box.createRigidArea(new Dimension(15, 0)));
@@ -101,10 +101,27 @@ public class Panel_De_Inicio extends javax.swing.JPanel {
         welcomePanel.setOpaque(false);
         welcomePanel.setLayout(new java.awt.BorderLayout());
         welcomePanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-        welcomePanel.setPreferredSize(new Dimension(0, 100));
+        welcomePanel.setPreferredSize(new Dimension(0, 120));
 
-        JLabel lblWelcome = new JLabel("Bienvenido a Sello Masculino");
-        lblWelcome.setFont(new Font("Inter", Font.BOLD, 28));
+        JLabel lblWelcome = new JLabel("Bienvenido a Sello Masculino") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                int x = getInsets().left;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                int textW = fm.stringWidth(getText());
+                java.awt.GradientPaint grad = new java.awt.GradientPaint(
+                        0, 0, new Color(138, 82, 57),
+                        textW, 0, new Color(218, 165, 32));
+                g2.setPaint(grad);
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+        };
+        lblWelcome.setFont(new Font("Inter", Font.BOLD, 34));
         lblWelcome.setForeground(Gestor_De_Temas.getTextColor());
 
         JLabel lblSub = new JLabel("Gestiona ventas, inventario y reportes de tu zapatería de caballero.");
@@ -119,8 +136,16 @@ public class Panel_De_Inicio extends javax.swing.JPanel {
         textPanel.add(lblSub);
         welcomePanel.add(textPanel, java.awt.BorderLayout.WEST);
 
-        add(welcomePanel, java.awt.BorderLayout.NORTH);
-        add(kpiPanel, java.awt.BorderLayout.SOUTH);
+        JPanel topPanel = new JPanel();
+        topPanel.setOpaque(false);
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+        JPanel welcomeWrapper = new JPanel(new java.awt.BorderLayout());
+        welcomeWrapper.setOpaque(false);
+        welcomeWrapper.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+        welcomeWrapper.add(welcomePanel, java.awt.BorderLayout.CENTER);
+        topPanel.add(welcomeWrapper);
+        topPanel.add(kpiPanel);
+        add(topPanel, java.awt.BorderLayout.NORTH);
 
         // ======================= TARJETAS DE ACCIÓN =======================
         ActionCard cardVentas = new ActionCard("Modulo de Ventas", "Crear boletas, procesar pagos y consultar transacciones del dia.", "/images/img_ventas.png", Icono_Elegante.Type.CART);

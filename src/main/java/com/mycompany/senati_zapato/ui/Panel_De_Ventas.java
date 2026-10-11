@@ -347,7 +347,7 @@ public class Panel_De_Ventas extends JPanel {
         txtSearch.setCaretColor(Gestor_De_Temas.getTextColor());
         
         // Placeholder simulation
-        JLabel lblSearchIcon = new JLabel("  Buscar por código de barras (SKU) o nombre...");
+        JLabel lblSearchIcon = new JLabel("  Buscar por nombre o código...");
         lblSearchIcon.setIcon(new Icono_Elegante(Icono_Elegante.Type.SEARCH, 18, Gestor_De_Temas.getMutedColor()));
         lblSearchIcon.setForeground(Gestor_De_Temas.getMutedColor());
         lblSearchIcon.setFont(new Font("Inter", Font.PLAIN, 18));
