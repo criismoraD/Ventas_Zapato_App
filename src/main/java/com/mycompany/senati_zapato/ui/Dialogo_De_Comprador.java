@@ -21,10 +21,50 @@ public class Dialogo_De_Comprador extends JDialog {
     private boolean continuar;
 
     public Dialogo_De_Comprador(Frame parent) {
-        super(parent, "Paso 1 de 2 - Datos del comprador", true);
+        super(parent, "Datos del comprador", true);
         setSize(590, 510);
         setLocationRelativeTo(parent);
+        configurarCampoDocumento();
         construirUI();
+    }
+
+    private void configurarCampoDocumento() {
+        ((javax.swing.text.AbstractDocument) txtDocumento.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
+                if (string == null) return;
+                string = string.replaceAll("\\D", "");
+                int max = "RUC".equals(cmbTipo.getSelectedItem()) ? 11 : 8;
+                int restante = max - fb.getDocument().getLength();
+                if (restante > 0 && !string.isEmpty()) {
+                    super.insertString(fb, offset, string.substring(0, Math.min(string.length(), restante)), attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs) throws javax.swing.text.BadLocationException {
+                if (text != null) {
+                    text = text.replaceAll("\\D", "");
+                }
+                int max = "RUC".equals(cmbTipo.getSelectedItem()) ? 11 : 8;
+                int actual = fb.getDocument().getLength();
+                int disponible = max - (actual - length);
+                if (disponible > 0 && text != null && !text.isEmpty()) {
+                    super.replace(fb, offset, length, text.substring(0, Math.min(text.length(), disponible)), attrs);
+                } else {
+                    super.replace(fb, offset, length, "", attrs);
+                }
+            }
+        });
+        cmbTipo.addActionListener(e -> {
+            int max = "RUC".equals(cmbTipo.getSelectedItem()) ? 11 : 8;
+            String actual = txtDocumento.getText();
+            if (actual.length() > max) {
+                txtDocumento.setText(actual.substring(0, max));
+            }
+            txtDocumento.setToolTipText("Máximo " + max + " dígitos");
+        });
+        txtDocumento.setToolTipText("Máximo 8 dígitos");
     }
 
     public Cliente getCliente() {
@@ -58,7 +98,7 @@ public class Dialogo_De_Comprador extends JDialog {
         JPanel encabezado = new JPanel(new BorderLayout(12, 0));
         encabezado.setBackground(Gestor_De_Temas.getNavColor());
         encabezado.setBorder(new EmptyBorder(18, 22, 18, 22));
-        JLabel titulo = new JLabel("PASO 1 DE 2 · DATOS DEL COMPRADOR");
+        JLabel titulo = new JLabel("DATOS DEL COMPRADOR");
         titulo.setForeground(Gestor_De_Temas.getTextColor());
         titulo.setFont(new Font("Inter", Font.BOLD, 19));
         encabezado.add(titulo, BorderLayout.WEST);

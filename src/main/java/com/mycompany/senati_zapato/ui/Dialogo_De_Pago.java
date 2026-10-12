@@ -43,6 +43,9 @@ public class Dialogo_De_Pago extends JDialog {
     private JTextField txtRefDigital;
     private JButton btnConfirmarDigital;
     private JLabel lblDigitalInstruction;
+    private JLabel qrLabel;
+    private JTextArea txtCuentaBancaria;
+    private JScrollPane scrollCuenta;
 
     // Botones de Métodos de Pago
     private JButton btnMetodoEfectivo;
@@ -52,7 +55,7 @@ public class Dialogo_De_Pago extends JDialog {
     private JButton btnMetodoTransferencia;
 
     public Dialogo_De_Pago(Frame parent, Venta venta) {
-        super(parent, "Paso 2 de 2 - Procesar Pago - POS", true);
+        super(parent, "Procesar Pago - POS", true);
         this.venta = venta;
         this.totalAPagar = venta.Get_Monto_Total();
 
@@ -91,7 +94,7 @@ public class Dialogo_De_Pago extends JDialog {
         headerPanel.setPreferredSize(new Dimension(0, 65));
         headerPanel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
-        JLabel lblTitle = new JLabel("PASO 2 DE 2 · MÉTODO DE PAGO");
+        JLabel lblTitle = new JLabel("MÉTODO DE PAGO");
         lblTitle.setFont(new Font("Inter", Font.BOLD, 18));
         lblTitle.setForeground(Gestor_De_Temas.getTextColor());
         headerPanel.add(lblTitle, BorderLayout.WEST);
@@ -233,33 +236,90 @@ public class Dialogo_De_Pago extends JDialog {
             case "Efectivo":
                 destacarBotonMetodo(btnMetodoEfectivo);
                 cardLayout.show(centerCards, "Efectivo");
-                setTitle("Cobro asistido - Paso 1 de 2: ingresar efectivo");
+                setTitle("Cobro asistido - ingresar efectivo");
                 SwingUtilities.invokeLater(() -> txtMontoRecibido.requestFocusInWindow());
                 break;
             case "Tarjeta":
                 destacarBotonMetodo(btnMetodoTarjeta);
                 cardLayout.show(centerCards, "Tarjeta");
-                setTitle("Cobro asistido - Paso 1 de 2: verificar tarjeta");
+                setTitle("Cobro asistido - verificar tarjeta");
                 break;
             case "Yape":
                 destacarBotonMetodo(btnMetodoYape);
-                lblDigitalInstruction.setText("Paso 1: pague con Yape, verifique la operación e ingrese la referencia:");
-                setTitle("Cobro asistido - Paso 1 de 2: verificar Yape");
+                lblDigitalInstruction.setText("Pague con Yape, verifique la operación e ingrese la referencia:");
+                setTitle("Cobro asistido - verificar Yape");
                 cardLayout.show(centerCards, "Digital");
+                scrollCuenta.setVisible(false);
+                cargarQRDigital("qr_yape", "/images/YAPE.png");
                 break;
             case "Plin":
                 destacarBotonMetodo(btnMetodoPlin);
-                lblDigitalInstruction.setText("Paso 1: pague con Plin, verifique la operación e ingrese la referencia:");
-                setTitle("Cobro asistido - Paso 1 de 2: verificar Plin");
+                lblDigitalInstruction.setText("Pague con Plin, verifique la operación e ingrese la referencia:");
+                setTitle("Cobro asistido - verificar Plin");
                 cardLayout.show(centerCards, "Digital");
+                scrollCuenta.setVisible(false);
+                cargarQRDigital("qr_plin", "/images/Plin.png");
                 break;
             case "Transferencia":
                 destacarBotonMetodo(btnMetodoTransferencia);
-                lblDigitalInstruction.setText("Paso 1: realice la transferencia, verifique la operación e ingrese la referencia:");
-                setTitle("Cobro asistido - Paso 1 de 2: verificar transferencia");
+                lblDigitalInstruction.setText("Realice la transferencia, verifique la operación e ingrese la referencia:");
+                setTitle("Cobro asistido - verificar transferencia");
                 cardLayout.show(centerCards, "Digital");
+                scrollCuenta.setVisible(true);
+                cargarQRDigital("qr_transferencia", "/images/Transferencia.png");
+                cargarCuentaBancaria();
                 break;
         }
+    }
+
+    /**
+     * Carga el QR del método digital desde la carpeta portable
+     * Datos_SenatiZapato/imagenes/ (qr_yape.png, qr_plin.png, qr_transferencia.png).
+     * Si no existe, muestra el logo del servicio con instrucciones.
+     */
+    private void cargarQRDigital(String nombreBase, String logoRecurso) {
+        String[] extensiones = {".png", ".jpg", ".jpeg"};
+        String base = System.getProperty("user.dir");
+        java.io.File carpeta = new java.io.File(base, "Datos_SenatiZapato" + java.io.File.separator + "imagenes");
+        for (String ext : extensiones) {
+            java.io.File archivo = new java.io.File(carpeta, nombreBase + ext);
+            if (archivo.isFile()) {
+                ImageIcon icono = new ImageIcon(archivo.getAbsolutePath());
+                if (icono.getIconWidth() > 0) {
+                    java.awt.Image escalada = icono.getImage().getScaledInstance(150, 150, java.awt.Image.SCALE_SMOOTH);
+                    qrLabel.setIcon(new ImageIcon(escalada));
+                    qrLabel.setText("");
+                    return;
+                }
+            }
+        }
+        java.net.URL logoUrl = getClass().getResource(logoRecurso);
+        if (logoUrl != null) {
+            ImageIcon logo = new ImageIcon(logoUrl);
+            java.awt.Image escalada = logo.getImage().getScaledInstance(100, 100, java.awt.Image.SCALE_SMOOTH);
+            qrLabel.setIcon(new ImageIcon(escalada));
+        } else {
+            qrLabel.setIcon(null);
+        }
+        qrLabel.setText("Realice el pago y verifique la operación en su aplicación.");
+        qrLabel.setForeground(Gestor_De_Temas.getMutedColor());
+    }
+
+    private void cargarCuentaBancaria() {
+        String base = System.getProperty("user.dir");
+        java.io.File archivo = new java.io.File(base, "Datos_SenatiZapato" + java.io.File.separator + "imagenes" + java.io.File.separator + "cuenta_transferencia.txt");
+        if (archivo.isFile()) {
+            try {
+                String contenido = new String(java.nio.file.Files.readAllBytes(archivo.toPath()), java.nio.charset.StandardCharsets.UTF_8).trim();
+                if (!contenido.isEmpty()) {
+                    txtCuentaBancaria.setText(contenido);
+                    txtCuentaBancaria.setCaretPosition(0);
+                    return;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        txtCuentaBancaria.setText("Configure sus datos bancarios en:\nDatos_SenatiZapato/imagenes/cuenta_transferencia.txt");
     }
 
     // ======================= FORMULARIO 1: EFECTIVO =======================
@@ -417,18 +477,36 @@ public class Dialogo_De_Pago extends JDialog {
         gbc.insets = new Insets(10, 0, 10, 0);
         gbc.weightx = 1.0;
 
-        // Icono o Gráfico representativo
+        // Imagen representativa (tarjeta-bancaria.png con fallback al icono dibujado)
         gbc.gridy = 0;
         JLabel lblIcon = new JLabel("", SwingConstants.CENTER);
-        lblIcon.setIcon(new Icono_Elegante(Icono_Elegante.Type.CREDIT_CARD, 60, Gestor_De_Temas.getAccentColor()));
+        java.net.URL tarjetaUrl = getClass().getResource("/images/tarjeta-bancaria.png");
+        if (tarjetaUrl != null) {
+            ImageIcon iconoTarjeta = new ImageIcon(tarjetaUrl);
+            java.awt.Image escalada = iconoTarjeta.getImage().getScaledInstance(140, 90, java.awt.Image.SCALE_SMOOTH);
+            lblIcon.setIcon(new ImageIcon(escalada));
+        } else {
+            lblIcon.setIcon(new Icono_Elegante(Icono_Elegante.Type.CREDIT_CARD, 60, Gestor_De_Temas.getAccentColor()));
+        }
         body.add(lblIcon, gbc);
 
         gbc.gridy = 1;
+        JTextArea lblPasos = new JTextArea("1. Inserte o deslice la tarjeta en el POS físico.\n2. Ingrese el código de autorización del voucher.\n3. Confirme para integrar la venta.");
+        lblPasos.setEditable(false);
+        lblPasos.setFont(new Font("Inter", Font.PLAIN, 13));
+        lblPasos.setForeground(Gestor_De_Temas.getTextColor());
+        lblPasos.setBackground(Gestor_De_Temas.getBgColor());
+        lblPasos.setLineWrap(true);
+        lblPasos.setWrapStyleWord(true);
+        lblPasos.setBorder(new EmptyBorder(0, 5, 0, 5));
+        body.add(lblPasos, gbc);
+
+        gbc.gridy = 2;
         JLabel lblNro = new JLabel("Código de autorización / voucher del POS:");
         lblNro.setFont(new Font("Inter", Font.BOLD, 14));
         body.add(lblNro, gbc);
 
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         txtRefTarjeta = new JTextField();
         txtRefTarjeta.setFont(new Font("Inter", Font.PLAIN, 18));
         txtRefTarjeta.setPreferredSize(new Dimension(0, 45));
@@ -438,12 +516,12 @@ public class Dialogo_De_Pago extends JDialog {
         ));
         body.add(txtRefTarjeta, gbc);
 
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         JLabel lblTerminal = new JLabel("Identificador del POS (opcional):");
         lblTerminal.setFont(new Font("Inter", Font.BOLD, 14));
         body.add(lblTerminal, gbc);
 
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         txtTerminalId = new JTextField();
         txtTerminalId.setFont(new Font("Inter", Font.PLAIN, 18));
         txtTerminalId.setPreferredSize(new Dimension(0, 45));
@@ -484,19 +562,26 @@ public class Dialogo_De_Pago extends JDialog {
 
         JPanel qrPanel = new JPanel(new BorderLayout());
         qrPanel.setOpaque(false);
-        JLabel qrLabel = new JLabel();
+        qrLabel = new JLabel();
         qrLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        String qrPath = System.getProperty("senati.qr.digital", "");
-        java.io.File qrFile = new java.io.File(qrPath);
-        if (qrFile.isFile()) {
-            qrLabel.setIcon(new ImageIcon(qrPath));
-        } else {
-            qrLabel.setText("QR no configurado. Verifique el pago en la aplicación.");
-            qrLabel.setForeground(Gestor_De_Temas.getTextColor());
-        }
         qrPanel.add(qrLabel, BorderLayout.CENTER);
         qrPanel.setPreferredSize(new Dimension(0, 170));
         body.add(qrPanel, BorderLayout.NORTH);
+
+        txtCuentaBancaria = new JTextArea(4, 0);
+        txtCuentaBancaria.setEditable(false);
+        txtCuentaBancaria.setFont(new Font("Inter", Font.PLAIN, 14));
+        txtCuentaBancaria.setForeground(Gestor_De_Temas.getTextColor());
+        txtCuentaBancaria.setBackground(Gestor_De_Temas.getNavColor());
+        txtCuentaBancaria.setLineWrap(true);
+        txtCuentaBancaria.setWrapStyleWord(true);
+        txtCuentaBancaria.setBorder(new EmptyBorder(10, 12, 10, 12));
+        txtCuentaBancaria.setVisible(false);
+        scrollCuenta = new JScrollPane(txtCuentaBancaria);
+        scrollCuenta.setBorder(BorderFactory.createLineBorder(Gestor_De_Temas.getBorderColor(), 1, true));
+        scrollCuenta.setPreferredSize(new Dimension(0, 110));
+        scrollCuenta.setVisible(false);
+        body.add(scrollCuenta, BorderLayout.CENTER);
 
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
         inputPanel.setOpaque(false);
@@ -512,7 +597,7 @@ public class Dialogo_De_Pago extends JDialog {
             new EmptyBorder(5, 10, 5, 10)
         ));
         inputPanel.add(txtRefDigital, BorderLayout.CENTER);
-        body.add(inputPanel, BorderLayout.CENTER);
+        body.add(inputPanel, BorderLayout.SOUTH);
 
         card.add(body, BorderLayout.CENTER);
 
@@ -564,7 +649,7 @@ public class Dialogo_De_Pago extends JDialog {
             venta.setTerminalId(metodoSeleccionado.equals("Tarjeta")
                     ? txtTerminalId.getText().trim() : "");
             int confirmacion = JOptionPane.showConfirmDialog(this,
-                    "Paso 2 de 2: confirme únicamente después de verificar que el pago fue aprobado " +
+                    "Confirme únicamente después de verificar que el pago fue aprobado " +
                     "en el POS, Yape, Plin o banca móvil.\n\n" +
                     "Método: " + metodoSeleccionado + "\nMonto: S/ " +
                     String.format("%.2f", totalAPagar) +

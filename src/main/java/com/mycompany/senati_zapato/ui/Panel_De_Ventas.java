@@ -206,8 +206,19 @@ public class Panel_De_Ventas extends JPanel {
                 int col = cartTable.columnAtPoint(e.getPoint());
                 int row = cartTable.rowAtPoint(e.getPoint());
                 if (col == 4 && row >= 0) { // Clic en 🗑️
-                    tableModel.removeRow(row);
-                    updateTotals();
+                    String producto = String.valueOf(tableModel.getValueAt(row, 2));
+                    String mensaje = "<html><font color='red' size='+1'><b>¿Eliminar del carrito?</b></font><br><br>"
+                            + "<font color='black'>Producto: <b>" + producto + "</b></font></html>";
+                    java.awt.Window win = SwingUtilities.getWindowAncestor(cartTable);
+                    int resp = JOptionPane.showConfirmDialog(win,
+                        mensaje,
+                        "Confirmar eliminación",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+                    if (resp == JOptionPane.YES_OPTION) {
+                        tableModel.removeRow(row);
+                        updateTotals();
+                    }
                 }
             }
         });
@@ -293,7 +304,7 @@ public class Panel_De_Ventas extends JPanel {
             }
         });
 
-        btnCobrar = new JButton(" COBRAR (F12)") {
+        btnCobrar = new JButton(" COBRAR") {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();

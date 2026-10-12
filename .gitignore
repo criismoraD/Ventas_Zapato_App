@@ -24,3 +24,9 @@ diagnostico_*.log
 .classpath
 .project
 nbproject/
+
+# Datos sensibles del usuario (no subir a GitHub)
+Datos_SenatiZapato/imagenes/qr_*.jpeg
+Datos_SenatiZapato/imagenes/qr_*.png
+Datos_SenatiZapato/imagenes/qr_*.jpg
+Datos_SenatiZapato/imagenes/cuenta_transferencia.txt

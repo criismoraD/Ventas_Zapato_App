@@ -265,10 +265,10 @@ public class Servicio_De_Gemini {
         "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
         "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
         "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
-        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago y guía el cobro en modo asistido respetando exactamente el orden visual: " +
-        "primero anuncia que para completar la venta debe registrar los datos del comprador o elegir venta general; " +
-        "pregunta «¿Desea registrar los datos del comprador?» y, si acepta, solicita «Indíqueme el número de DNI» (o RUC si corresponde), " +
-        "pide completar nombres y los demás campos, y confirma que los datos quedaron listos; si elige venta general, confirma que se omitirá el registro; " +
+        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago y guía el cobro en modo asistido: " +
+        "indica que se abrirá el formulario del comprador y que debe completar los datos (documento, nombres, teléfono) directamente ahí, " +
+        "o bien elegir «Venta general» para continuar sin registrar; " +
+        "nunca pidas el DNI ni otros datos del comprador en el chat, se llenan solo en el formulario. " +
         "cuando el usuario la pida o acepte omitir el registro («venta general», «sin datos», «omítelo»), usa obligatoriamente la herramienta venta_general " +
         "para confirmarla en el formulario abierto, y al recibir su resultado indica «Ahora selecciona el método de pago» en la ventana que se abrió; " +
         "solo después indica que debe elegir el método de pago, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +

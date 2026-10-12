@@ -89,10 +89,10 @@ public class Generador_De_Pdf {
                 customerCell.add(new Paragraph(cliente.getTipoDocumento() + ": " + cliente.getNumeroDocumento()
                         + "   |   " + cliente.getNombres()));
                 String contacto = cliente.getTelefono();
-                if (!cliente.getCorreo().isBlank()) {
-                    contacto += (contacto.isBlank() ? "" : "   |   ") + cliente.getCorreo();
+                if (cliente.getCorreo() != null && !cliente.getCorreo().isBlank()) {
+                    contacto += (contacto == null || contacto.isBlank() ? "" : "   |   ") + cliente.getCorreo();
                 }
-                if (!contacto.isBlank()) {
+                if (contacto != null && !contacto.isBlank()) {
                     customerCell.add(new Paragraph(contacto));
                 }
             }

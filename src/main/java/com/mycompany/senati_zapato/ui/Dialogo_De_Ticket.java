@@ -64,10 +64,10 @@ public class Dialogo_De_Ticket extends JDialog {
             sb.append(" ").append(venta.getCliente().getTipoDocumento()).append(": ")
                     .append(venta.getCliente().getNumeroDocumento()).append("\n");
             sb.append(" NOMBRE    : ").append(venta.getCliente().getNombres()).append("\n");
-            if (!venta.getCliente().getTelefono().isBlank()) {
+            if (venta.getCliente().getTelefono() != null && !venta.getCliente().getTelefono().isBlank()) {
                 sb.append(" TELÉFONO  : ").append(venta.getCliente().getTelefono()).append("\n");
             }
-            if (!venta.getCliente().getCorreo().isBlank()) {
+            if (venta.getCliente().getCorreo() != null && !venta.getCliente().getCorreo().isBlank()) {
                 sb.append(" CORREO    : ").append(venta.getCliente().getCorreo()).append("\n");
             }
         } else {

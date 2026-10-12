@@ -182,7 +182,7 @@ public class Servicio_De_Voz_En_Vivo {
         micLine.start();
 
         speakerLine = AudioSystem.getSourceDataLine(OUT_FORMAT);
-        speakerLine.open(OUT_FORMAT, 24000);
+        speakerLine.open(OUT_FORMAT, 96000);
         speakerLine.start();
         startSpeakerLoop();
     }
