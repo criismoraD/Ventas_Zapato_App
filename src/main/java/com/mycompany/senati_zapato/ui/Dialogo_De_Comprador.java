@@ -26,6 +26,60 @@ public class Dialogo_De_Comprador extends JDialog {
         setLocationRelativeTo(parent);
         configurarCampoDocumento();
         construirUI();
+        prellenarDesdeBot();
+    }
+
+    /**
+     * Si el bot guardó un DNI/RUC, pre-llena el formulario y lanza la consulta en background.
+     */
+    private void prellenarDesdeBot() {
+        String doc = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Obtener_DNI_Pendiente();
+        if (doc == null || doc.isBlank()) {
+            // También revisa si ya hay datos del bot (fallback)
+            doc = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Obtener_Ultimo_DNI();
+            String nombres = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Obtener_Ultimos_Nombres();
+            if (doc != null && nombres != null) {
+                if (doc.length() == 11) cmbTipo.setSelectedItem("RUC");
+                else cmbTipo.setSelectedItem("DNI");
+                txtDocumento.setText(doc);
+                txtNombres.setText(nombres);
+                lblEstado.setText("Datos obtenidos automáticamente del bot (RENIEC/SUNAT). Verifique y continúe.");
+                lblEstado.setForeground(new Color(79, 133, 87));
+                com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Limpiar();
+            }
+            return;
+        }
+
+        // Abrir el formulario YA con el documento, y consultar en segundo plano
+        if (doc.length() == 11) {
+            cmbTipo.setSelectedItem("RUC");
+        } else {
+            cmbTipo.setSelectedItem("DNI");
+        }
+        txtDocumento.setText(doc);
+        lblEstado.setText("Consultando RENIEC/SUNAT en segundo plano...");
+        lblEstado.setForeground(new Color(100, 100, 100));
+
+        final String docFinal = doc;
+        new Thread(() -> {
+            String nombres;
+            if (docFinal.length() == 11) {
+                nombres = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Consultar_Razon_Social(docFinal);
+            } else {
+                nombres = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Consultar_Nombres(docFinal);
+            }
+            final String resultado = nombres;
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                if (resultado != null && !resultado.isBlank()) {
+                    txtNombres.setText(resultado);
+                    lblEstado.setText("Datos obtenidos de RENIEC/SUNAT. Verifique y continúe.");
+                    lblEstado.setForeground(new Color(79, 133, 87));
+                } else {
+                    lblEstado.setText("No se pudo consultar. Ingrese los nombres manualmente.");
+                    lblEstado.setForeground(new Color(190, 130, 45));
+                }
+            });
+        }, "consulta-dni-background").start();
     }
 
     private void configurarCampoDocumento() {
@@ -65,6 +119,58 @@ public class Dialogo_De_Comprador extends JDialog {
             txtDocumento.setToolTipText("Máximo " + max + " dígitos");
         });
         txtDocumento.setToolTipText("Máximo 8 dígitos");
+
+        // Auto-consulta RENIEC al completar 8 dígitos (solo DNI)
+        txtDocumento.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { consultarSiCompleto(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) {}
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) {}
+        });
+    }
+
+    private void consultarSiCompleto() {
+        String tipo = (String) cmbTipo.getSelectedItem();
+        String doc = txtDocumento.getText().trim();
+
+        if ("DNI".equals(tipo) && doc.length() == 8) {
+            if (cliente != null && doc.equals(cliente.getNumeroDocumento())) return;
+            lblEstado.setText("Consultando RENIEC...");
+            lblEstado.setForeground(new Color(100, 100, 100));
+            new Thread(() -> {
+                String nombres = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Consultar_Nombres(doc);
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    if (nombres != null && !nombres.isBlank()) {
+                        if (txtNombres.getText().trim().isEmpty()) {
+                            txtNombres.setText(nombres);
+                        }
+                        lblEstado.setText("Datos obtenidos de RENIEC. Verifique y continúe.");
+                        lblEstado.setForeground(new Color(79, 133, 87));
+                    } else {
+                        lblEstado.setText("No se pudo consultar RENIEC. Ingrese los nombres manualmente.");
+                        lblEstado.setForeground(new Color(190, 130, 45));
+                    }
+                });
+            }, "consulta-dni").start();
+        } else if ("RUC".equals(tipo) && doc.length() == 11) {
+            if (cliente != null && doc.equals(cliente.getNumeroDocumento())) return;
+            lblEstado.setText("Consultando SUNAT...");
+            lblEstado.setForeground(new Color(100, 100, 100));
+            new Thread(() -> {
+                String razon = com.mycompany.senati_zapato.servicios.Servicio_De_DNI.Consultar_Razon_Social(doc);
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    if (razon != null && !razon.isBlank()) {
+                        if (txtNombres.getText().trim().isEmpty()) {
+                            txtNombres.setText(razon);
+                        }
+                        lblEstado.setText("Datos obtenidos de SUNAT. Verifique y continúe.");
+                        lblEstado.setForeground(new Color(79, 133, 87));
+                    } else {
+                        lblEstado.setText("No se pudo consultar SUNAT. Ingrese la razón social manualmente.");
+                        lblEstado.setForeground(new Color(190, 130, 45));
+                    }
+                });
+            }, "consulta-ruc").start();
+        }
     }
 
     public Cliente getCliente() {

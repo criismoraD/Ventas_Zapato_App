@@ -173,7 +173,8 @@ public class Panel_Principal extends JFrame {
             e.printStackTrace();
         }
         setUndecorated(true);
-        setAlwaysOnTop(true);
+        // AlwaysOnTop desactivado para que Alt+Tab funcione correctamente.
+        // La app se comporta como cualquier otra ventana normal.
         
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         int screenWidth = screenSize.width;
@@ -224,13 +225,13 @@ public class Panel_Principal extends JFrame {
         topNavBar.setPreferredSize(new Dimension(screenWidth, 80));
 
         // ── Tabs centrados ──
-        tabsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 20));
+        tabsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 14));
         tabsPanel.setOpaque(false);
 
-        btnInicio   = createTab("Inicio", "Inicio", Icono_Elegante.Type.HOME);
-        btnVentas   = createTab("Ventas", "Ventas", Icono_Elegante.Type.CART);
-        btnGestor   = createTab("Inventario", "Gestor", Icono_Elegante.Type.BOX);
-        btnReportes = createTab("Reportes", "Reportes", Icono_Elegante.Type.CHART);
+        btnInicio   = createTab("Inicio", "Inicio", "/images/nav_inicio.png");
+        btnVentas   = createTab("Ventas", "Ventas", "/images/nav_ventas.png");
+        btnGestor   = createTab("Inventario", "Gestor", "/images/nav_inventario.png");
+        btnReportes = createTab("Reportes", "Reportes", "/images/nav_reportes.png");
 
 
         tabsPanel.add(btnInicio);
@@ -503,9 +504,16 @@ public class Panel_Principal extends JFrame {
         t.start();
     }
 
-    private Boton_De_Pestana createTab(String text, String cardName, Icono_Elegante.Type iconType) {
+    private Boton_De_Pestana createTab(String text, String cardName, String imageResourcePath) {
         Boton_De_Pestana btn = new Boton_De_Pestana(text);
-        btn.setIcon(new Icono_Elegante(iconType, 24));
+        java.net.URL imgUrl = getClass().getResource(imageResourcePath);
+        if (imgUrl != null) {
+            javax.swing.ImageIcon imgIcon = new javax.swing.ImageIcon(imgUrl);
+            java.awt.Image scaled = imgIcon.getImage().getScaledInstance(22, 22, java.awt.Image.SCALE_SMOOTH);
+            btn.setIcon(new javax.swing.ImageIcon(scaled));
+        } else {
+            btn.setIcon(new Icono_Elegante(Icono_Elegante.Type.HOME, 24));
+        }
         btn.setIconTextGap(10);
         btn.addActionListener(e -> {
             Cambiar_Pestana(cardName);

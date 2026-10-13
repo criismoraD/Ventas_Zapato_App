@@ -1,11 +1,5 @@
 package com.mycompany.senati_zapato.ui;
 
-import com.mycompany.senati_zapato.ui.*;
-import com.mycompany.senati_zapato.modelos.*;
-import com.mycompany.senati_zapato.datos.*;
-import com.mycompany.senati_zapato.servicios.*;
-import com.mycompany.senati_zapato.utilidades.*;
-
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
@@ -20,6 +14,7 @@ import javax.swing.JButton;
 public class Boton_De_Pestana extends JButton {
 
     private boolean active = false;
+    private boolean hovered = false;
 
     private Color getActiveColor() {
         return Gestor_De_Temas.getTextColor();
@@ -43,22 +38,26 @@ public class Boton_De_Pestana extends JButton {
         setBorderPainted(false);
         setFocusPainted(false);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
-        setFont(new Font("Inter", Font.PLAIN, 20));
+        setFont(new Font("Inter", Font.BOLD, 17));
         setForeground(getDefaultColor());
 
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
+                hovered = true;
                 if (!active) {
                     setForeground(getHoverColor());
                 }
+                repaint();
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
+                hovered = false;
                 if (!active) {
                     setForeground(getDefaultColor());
                 }
+                repaint();
             }
         });
     }
@@ -71,20 +70,37 @@ public class Boton_De_Pestana extends JButton {
 
     @Override
     protected void paintComponent(Graphics g) {
-        // Actualizar el color de texto antes de pintar
-        setForeground(active ? getActiveColor() : getDefaultColor());
-        super.paintComponent(g);
-        if (active) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(getIndicatorColor());
+        setForeground(active ? getActiveColor() : (hovered ? getHoverColor() : getDefaultColor()));
 
-            int lineW = getWidth() - 16;
-            int lineH = 5;
-            int lineX = 8;
-            int lineY = getHeight() - lineH;
-            g2.fillRoundRect(lineX, lineY, lineW, lineH, 2, 2);
-            g2.dispose();
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Fondo sutil al hacer hover o estar activo
+        if (active || hovered) {
+            g2.setColor(new Color(
+                getIndicatorColor().getRed(),
+                getIndicatorColor().getGreen(),
+                getIndicatorColor().getBlue(),
+                active ? 40 : 25
+            ));
+            g2.fillRoundRect(0, 2, getWidth(), getHeight() - 4, 14, 14);
+        }
+
+        g2.dispose();
+        super.paintComponent(g);
+
+        // Indicador inferior cuando está activo
+        if (active) {
+            Graphics2D g3 = (Graphics2D) g.create();
+            g3.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g3.setColor(getIndicatorColor());
+
+            int lineW = getWidth() - 32;
+            int lineH = 3;
+            int lineX = 16;
+            int lineY = getHeight() - lineH - 2;
+            g3.fillRoundRect(lineX, lineY, lineW, lineH, 2, 2);
+            g3.dispose();
         }
     }
 }

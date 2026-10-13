@@ -149,6 +149,10 @@ public final class Configuracion {
         return key;
     }
 
+    public static String Obtener_Decoelecta_Api_Key() {
+        return Obtener("DECOLECTA_API_KEY", "");
+    }
+
     /**
      * true si hay una key utilizable (para degradar el chatbot con un mensaje amable).
      */

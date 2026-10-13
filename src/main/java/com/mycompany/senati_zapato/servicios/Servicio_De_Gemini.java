@@ -265,10 +265,16 @@ public class Servicio_De_Gemini {
         "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
         "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
         "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
-        "Si el usuario te pide cobrar o pagar, usa la herramienta procesar_pago y guía el cobro en modo asistido: " +
-        "indica que se abrirá el formulario del comprador y que debe completar los datos (documento, nombres, teléfono) directamente ahí, " +
-        "o bien elegir «Venta general» para continuar sin registrar; " +
-        "nunca pidas el DNI ni otros datos del comprador en el chat, se llenan solo en el formulario. " +
+        "Si el usuario te pide cobrar o pagar, NO llames procesar_pago todavía. " +
+        "Estas frases también significan cobrar: «pasamos al pago», «continuar al pago», «ir al cobro», «pasar al cobro», «seguimos con el pago», «finalizar compra», «terminar compra», «ya, paguemos», «listo, pagar». " +
+        "Primero pregúntale: «¿Desea registrar los datos del comprador con DNI/RUC o prefiere una Venta general?» y espera su respuesta. " +
+        "Si elige Venta general o no quiere registrar datos, usa la herramienta venta_general directamente. " +
+        "Si elige registrar con DNI, pregúntale: «¿Cuál es su DNI?» y espera a que lo diga. " +
+        "Cuando el usuario te dé un DNI de 8 dígitos, usa consultar_dni y LUEGO procesar_pago de inmediato: " +
+        "el formulario se abrirá al instante y los datos de RENIEC se cargarán automáticamente en segundo plano. " +
+        "Si el usuario elige RUC, pregúntale: «¿Cuál es el RUC?» — cuando lo dé (11 dígitos), usa consultar_ruc y luego procesar_pago. " +
+        "Dile al usuario: «Listo, el formulario se abrirá con su documento ya cargado y los datos llegarán en unos segundos.» " +
+        "Si el usuario solo da el DNI o RUC sin pedir cobro, consulta y preséntale los datos encontrados. " +
         "cuando el usuario la pida o acepte omitir el registro («venta general», «sin datos», «omítelo»), usa obligatoriamente la herramienta venta_general " +
         "para confirmarla en el formulario abierto, y al recibir su resultado indica «Ahora selecciona el método de pago» en la ventana que se abrió; " +
         "solo después indica que debe elegir el método de pago, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +
@@ -363,6 +369,36 @@ public class Servicio_De_Gemini {
                                         "filtro", Schema.builder().type(new Type(Type.Known.STRING)).description("Filtro: todos, disponibles, bajo_stock, agotados").build()
                                 ))
                                 .required(List.of("filtro"))
+                                .build())
+                        .build())
+                .build());
+
+        // consultar_dni
+        toolList.add(Tool.builder()
+                .functionDeclarations(FunctionDeclaration.builder()
+                        .name("consultar_dni")
+                        .description("Consulta los nombres de una persona por su DNI (8 dígitos) usando RENIEC. Usa esta herramienta cuando el usuario proporcione un DNI y quiera registrar un comprador.")
+                        .parameters(Schema.builder()
+                                .type(new Type(Type.Known.OBJECT))
+                                .properties(Map.of(
+                                        "dni", Schema.builder().type(new Type(Type.Known.STRING)).description("Número de DNI de 8 dígitos").build()
+                                ))
+                                .required(List.of("dni"))
+                                .build())
+                        .build())
+                .build());
+
+        // consultar_ruc
+        toolList.add(Tool.builder()
+                .functionDeclarations(FunctionDeclaration.builder()
+                        .name("consultar_ruc")
+                        .description("Consulta la razón social de una empresa por su RUC (11 dígitos) usando SUNAT. Usa esta herramienta cuando el usuario proporcione un RUC y quiera registrar un comprador.")
+                        .parameters(Schema.builder()
+                                .type(new Type(Type.Known.OBJECT))
+                                .properties(Map.of(
+                                        "ruc", Schema.builder().type(new Type(Type.Known.STRING)).description("Número de RUC de 11 dígitos").build()
+                                ))
+                                .required(List.of("ruc"))
                                 .build())
                         .build())
                 .build());
@@ -687,6 +723,36 @@ public class Servicio_De_Gemini {
                 sb.append("Productos (").append(filtro).append("): ").append(total).append("\n");
                 arbolCat.inorderCategorias(arbolCat.getRaiz(), sb, filtro);
                 return sb.toString();
+            }
+            case "consultar_dni": {
+                String dni = (String) args.get("dni");
+                if (dni == null || !dni.matches("\\d{8}")) {
+                    return "Error: el DNI debe tener 8 dígitos numéricos.";
+                }
+                // Guardar para el formulario (se abre al instante)
+                Servicio_De_DNI.Guardar_DNI_Para_Formulario(dni);
+                // Consultar en background sin bloquear el chat
+                new Thread(() -> {
+                    String nombres = Servicio_De_DNI.Consultar_Nombres(dni);
+                    if (nombres != null && !nombres.isBlank()) {
+                        Servicio_De_DNI.Guardar_DNI_Para_Formulario(dni);
+                    }
+                }, "consulta-dni-bg").start();
+                return "DNI " + dni + " registrado. El formulario se abrirá con los datos cargados automáticamente.";
+            }
+            case "consultar_ruc": {
+                String ruc = (String) args.get("ruc");
+                if (ruc == null || !ruc.matches("\\d{11}")) {
+                    return "Error: el RUC debe tener 11 dígitos numéricos.";
+                }
+                Servicio_De_DNI.Guardar_DNI_Para_Formulario(ruc);
+                new Thread(() -> {
+                    String razon = Servicio_De_DNI.Consultar_Razon_Social(ruc);
+                    if (razon != null && !razon.isBlank()) {
+                        Servicio_De_DNI.Guardar_DNI_Para_Formulario(ruc);
+                    }
+                }, "consulta-ruc-bg").start();
+                return "RUC " + ruc + " registrado. El formulario se abrirá con los datos cargados automáticamente.";
             }
             case "agregar_producto": {
                 String codigo = (String) args.get("codigo");
