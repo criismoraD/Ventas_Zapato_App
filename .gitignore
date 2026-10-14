@@ -30,3 +30,9 @@ Datos_SenatiZapato/imagenes/qr_*.jpeg
 Datos_SenatiZapato/imagenes/qr_*.png
 Datos_SenatiZapato/imagenes/qr_*.jpg
 Datos_SenatiZapato/imagenes/cuenta_transferencia.txt
+
+# Distribuciones y binarios con claves inyectadas
+Distribucion_Portable/
+*.apk
+*.aab
+
