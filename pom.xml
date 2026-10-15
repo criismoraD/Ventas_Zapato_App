@@ -87,6 +87,49 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Copiar base de datos real a target junto al ejecutable -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copiar-db-a-target-raiz</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/Datos_SenatiZapato</directory>
+                                    <includes>
+                                        <include>senati_zapato.db</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copiar-db-a-target-datos</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/Datos_SenatiZapato</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/Datos_SenatiZapato</directory>
+                                    <includes>
+                                        <include>senati_zapato.db</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

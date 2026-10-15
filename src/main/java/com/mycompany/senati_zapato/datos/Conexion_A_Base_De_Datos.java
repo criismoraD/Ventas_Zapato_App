@@ -18,6 +18,7 @@ public class Conexion_A_Base_De_Datos {
 
     public static synchronized Connection Get_Conexion() throws SQLException {
         if (!databaseInitialized) {
+            java.io.File userDir = new java.io.File(System.getProperty("user.dir"));
             java.io.File appDirFile = new java.io.File(APP_DIR);
             if (!appDirFile.exists()) {
                 if (!appDirFile.mkdirs() && !appDirFile.exists()) {
@@ -25,9 +26,25 @@ public class Conexion_A_Base_De_Datos {
                 }
             }
             java.io.File dbFile = new java.io.File(APP_DIR, "senati_zapato.db");
+            java.io.File rootDb = new java.io.File(userDir, "senati_zapato.db");
+
+            // Si se ejecuta desde "target", detectar la base de datos real del proyecto en la carpeta superior
+            if (userDir.getName().equalsIgnoreCase("target") && userDir.getParentFile() != null) {
+                java.io.File parentDatosDb = new java.io.File(userDir.getParentFile(), "Datos_SenatiZapato" + java.io.File.separator + "senati_zapato.db");
+                java.io.File parentRootDb = new java.io.File(userDir.getParentFile(), "senati_zapato.db");
+                java.io.File parentRealDb = parentDatosDb.exists() ? parentDatosDb : (parentRootDb.exists() ? parentRootDb : null);
+
+                if (parentRealDb != null) {
+                    int countTarget = contarProductosSilencioso(dbFile);
+                    int countParent = contarProductosSilencioso(parentRealDb);
+                    // Si no existe en target, o target tiene <= 9 semillas y el proyecto principal tiene más
+                    if (!dbFile.exists() || (countTarget <= 9 && countParent > 9)) {
+                        copiarBaseDeDatos(parentRealDb, dbFile, "el proyecto principal");
+                    }
+                }
+            }
 
             // Solo migrar una base alternativa cuando la base portable aún no existe.
-            java.io.File rootDb = new java.io.File(System.getProperty("user.dir"), "senati_zapato.db");
             if (!dbFile.exists() && rootDb.exists()) {
                 copiarBaseDeDatos(rootDb, dbFile, "la raíz del proyecto");
             }
@@ -39,6 +56,14 @@ public class Conexion_A_Base_De_Datos {
                     copiarBaseDeDatos(oldDb, dbFile, "user.home");
                 }
             }
+
+            // Asegurar que senati_zapato.db también esté visible directamente en la carpeta de ejecución (junto al .exe)
+            if (dbFile.exists() && !rootDb.exists()) {
+                try {
+                    java.nio.file.Files.copy(dbFile.toPath(), rootDb.toPath());
+                } catch (Exception ignored) {}
+            }
+
             try {
                 Class.forName("org.sqlite.JDBC");
                 try (Connection initialConnection = DriverManager.getConnection(DB_URL)) {
@@ -58,9 +83,20 @@ public class Conexion_A_Base_De_Datos {
         return newConnection;
     }
 
+    private static int contarProductosSilencioso(java.io.File file) {
+        if (file == null || !file.exists()) return 0;
+        try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + file.getAbsolutePath());
+             Statement s = c.createStatement();
+             ResultSet rs = s.executeQuery("SELECT count(*) FROM productos")) {
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
     private static void copiarBaseDeDatos(java.io.File origen, java.io.File destino, String descripcion) throws SQLException {
         try {
-            java.nio.file.Files.copy(origen.toPath(), destino.toPath());
+            java.nio.file.Files.copy(origen.toPath(), destino.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             System.out.println("Base de datos migrada desde " + descripcion + ".");
         } catch (java.io.IOException ex) {
             throw new SQLException("No se pudo migrar la base de datos desde " + descripcion + ".", ex);
