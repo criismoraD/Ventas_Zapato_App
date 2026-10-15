@@ -117,6 +117,42 @@ public class Procesador_De_Pagos {
                 }
             }
 
+            // 4.1 Sincronizar el desglose de tallas con el stock descontado
+            String sqlGetTallas = "SELECT tallas FROM productos WHERE id = ?";
+            String sqlUpdateTallas = "UPDATE productos SET tallas = ? WHERE id = ?";
+            try (PreparedStatement pstmtGet = conn.prepareStatement(sqlGetTallas);
+                 PreparedStatement pstmtUpTallas = conn.prepareStatement(sqlUpdateTallas)) {
+                for (Map.Entry<Integer, Integer> entrada : cantidadesPorProducto.entrySet()) {
+                    pstmtGet.setInt(1, entrada.getKey());
+                    try (ResultSet rsT = pstmtGet.executeQuery()) {
+                        if (rsT.next()) {
+                            String tStr = rsT.getString("tallas");
+                            if (tStr != null && tStr.contains(":")) {
+                                Producto temp = new Producto();
+                                temp.Set_Tallas(tStr);
+                                java.util.Map<String, Integer> map = temp.Get_Mapa_Stock_Tallas();
+                                int aDescontar = entrada.getValue();
+                                for (Map.Entry<String, Integer> e : map.entrySet()) {
+                                    if (aDescontar <= 0) break;
+                                    int disponible = e.getValue();
+                                    int quitar = Math.min(disponible, aDescontar);
+                                    e.setValue(disponible - quitar);
+                                    aDescontar -= quitar;
+                                }
+                                StringBuilder sb = new StringBuilder();
+                                for (Map.Entry<String, Integer> e : map.entrySet()) {
+                                    if (sb.length() > 0) sb.append(", ");
+                                    sb.append(e.getKey()).append(":").append(e.getValue());
+                                }
+                                pstmtUpTallas.setString(1, sb.toString());
+                                pstmtUpTallas.setInt(2, entrada.getKey());
+                                pstmtUpTallas.executeUpdate();
+                            }
+                        }
+                    }
+                }
+            }
+
             conn.commit(); // CONFIRMACIÓN DE LA TRANSACCIÓN (ACID)
             return true;
         } catch (SQLException e) {

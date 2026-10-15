@@ -247,7 +247,10 @@ public class Servicio_De_Gemini {
         "Si el usuario te pide añadir, poner o agregar un producto al carrito, usa obligatoriamente la herramienta agregar_carrito.\n" +
         "Si te envían una imagen o captura, úsala como referencia visual temporal para responder.\n" +
         "Categorías válidas: Mocasines, Botas, Zapatillas, Sandalias, Deportivos, Urbanos, Elegantes.\n" +
-        "Tallas por defecto si no se especifican: 38,39,40,41,42.\n" +
+        "Cada producto cuenta con stock detallado por talla (ejemplo: Talla 44: 20 pares, Talla 42: 8 pares). " +
+        "Cuando el usuario consulte por la disponibilidad o cantidad de una talla en específico (ejemplo: '¿tienes en talla 44?', '¿cuántos pares quedan en 44?'), " +
+        "revisa el stock de esa talla exacta y responde con precisión (ejemplo: 'Sí, nos quedan 20 pares en talla 44'). " +
+        "Si la talla solicitada no tiene stock o no existe, indícalo claramente y menciona qué otras tallas sí tienen stock disponible.\n" +
         "Responde en español con máximo 2 frases cortas. " +
         "Para saludos, confirmaciones, explicaciones breves y preguntas generales que no dependan de datos actuales, responde directamente sin usar herramientas. " +
         "Tienes memoria de la conversación: usa el contexto de los mensajes anteriores para " +
@@ -697,9 +700,9 @@ public class Servicio_De_Gemini {
                 if (encontrado == null) return "No se encontró el producto: " + prod;
                 return "Producto: " + encontrado.Get_Nombre() + "\n"
                         + "Código: " + encontrado.Get_Codigo() + "\n"
-                        + "Stock: " + encontrado.Get_Stock() + " pares\n"
+                        + "Stock Total: " + encontrado.Get_Stock() + " pares\n"
                         + "Precio: S/ " + String.format("%.2f", encontrado.Get_Precio()) + "\n"
-                        + "Tallas: " + encontrado.Get_Tallas() + "\n"
+                        + "Stock por Tallas: " + encontrado.Get_Resumen_Tallas_Con_Stock() + "\n"
                         + "Estado: " + encontrado.Get_Estado();
             }
             case "listar_productos": {

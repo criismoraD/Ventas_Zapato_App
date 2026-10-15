@@ -751,8 +751,11 @@ public class Panel_De_Ventas extends JPanel {
             Producto p = copia.get(i);
             sb.append(p.Get_Nombre()).append(" S/ ").append(String.format("%.2f", p.Get_Precio()));
             // La talla se incluye porque el filtro puede venir de un turno anterior.
-            if (filtroTalla != null && p.Get_Tallas() != null && !p.Get_Tallas().trim().isEmpty()) {
-                sb.append(" (tallas ").append(p.Get_Tallas()).append(")");
+            if (filtroTalla != null) {
+                int cantTalla = p.Get_Stock_De_Talla(filtroTalla);
+                sb.append(" (").append(cantTalla).append(" pares en talla ").append(filtroTalla).append(")");
+            } else if (p.Get_Tallas() != null && !p.Get_Tallas().trim().isEmpty()) {
+                sb.append(" (tallas ").append(p.Get_Tallas_Solo_Numeros()).append(")");
             }
             if (i < max - 1) sb.append(", ");
         }
@@ -946,14 +949,10 @@ public class Panel_De_Ventas extends JPanel {
         }
         if (filtroPrecioMin != null && p.Get_Precio() < filtroPrecioMin) return false;
         if (filtroTalla != null) {
-            // Comparacion EXACTA por token: si no, "44" apareceria dentro de "40,41"
-            // o "38,39,40,41,42" y el filtro dejaria pasar productos que no la tienen.
-            String[] disponibles = (p.Get_Tallas() != null ? p.Get_Tallas() : "").split("[,\\s]+");
-            boolean tieneTalla = false;
-            for (String t : disponibles) {
-                if (t.trim().equals(filtroTalla)) { tieneTalla = true; break; }
+            // Verificar si el producto tiene stock real (> 0) en la talla buscada
+            if (p.Get_Stock_De_Talla(filtroTalla) <= 0) {
+                return false;
             }
-            if (!tieneTalla) return false;
         }
         return true;
     }
@@ -1282,11 +1281,12 @@ public class Panel_De_Ventas extends JPanel {
             add(Box.createRigidArea(new Dimension(0, 5)));
 
             // Tallas text
-            String tallasText = (prod.Get_Tallas() != null && !prod.Get_Tallas().isEmpty()) ? prod.Get_Tallas() : "Única";
+            String tallasText = (prod.Get_Tallas() != null && !prod.Get_Tallas().isEmpty()) ? prod.Get_Tallas_Solo_Numeros() : "Única";
             JLabel lblTallas = new JLabel("Tallas: " + tallasText, SwingConstants.CENTER);
             lblTallas.setFont(new Font("Inter", Font.PLAIN, 14));
             lblTallas.setForeground(Gestor_De_Temas.getMutedColor());
             lblTallas.setAlignmentX(Component.CENTER_ALIGNMENT);
+            lblTallas.setToolTipText("Stock: " + prod.Get_Resumen_Tallas_Con_Stock());
             add(lblTallas);
             add(Box.createVerticalGlue());
 

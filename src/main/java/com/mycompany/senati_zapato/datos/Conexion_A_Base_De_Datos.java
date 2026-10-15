@@ -3,6 +3,8 @@ package com.mycompany.senati_zapato.datos;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -144,6 +146,7 @@ public class Conexion_A_Base_De_Datos {
                     "ON ventas(metodo_pago, referencia) WHERE trim(referencia) <> ''");
 
             seedData(stmt);
+            migrarTallasAFormatoConStock(stmt);
         }
     }
 
@@ -157,20 +160,56 @@ public class Conexion_A_Base_De_Datos {
         }
     }
 
+    private static void migrarTallasAFormatoConStock(Statement stmt) {
+        try (ResultSet rs = stmt.executeQuery("SELECT id, stock, tallas FROM productos WHERE tallas IS NOT NULL AND trim(tallas) <> '' AND tallas NOT LIKE '%:%'")) {
+            java.util.List<Object[]> filas = new java.util.ArrayList<>();
+            while (rs.next()) {
+                filas.add(new Object[]{rs.getInt("id"), rs.getInt("stock"), rs.getString("tallas")});
+            }
+            for (Object[] fila : filas) {
+                int id = (int) fila[0];
+                int stock = (int) fila[1];
+                String tallasStr = (String) fila[2];
+                String[] tallasArr = tallasStr.split("[,;]+");
+                java.util.List<String> validas = new java.util.ArrayList<>();
+                for (String t : tallasArr) {
+                    if (!t.trim().isEmpty()) validas.add(t.trim());
+                }
+                if (!validas.isEmpty()) {
+                    int cantBase = stock / validas.size();
+                    int resto = stock % validas.size();
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < validas.size(); i++) {
+                        if (i > 0) sb.append(", ");
+                        int cant = cantBase + (i == 0 ? resto : 0);
+                        sb.append(validas.get(i)).append(":").append(Math.max(0, cant));
+                    }
+                    try (PreparedStatement up = stmt.getConnection().prepareStatement("UPDATE productos SET tallas = ? WHERE id = ?")) {
+                        up.setString(1, sb.toString());
+                        up.setInt(2, id);
+                        up.executeUpdate();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[DB Migracion Tallas] Info: " + e.getMessage());
+        }
+    }
+
     private static void seedData(Statement stmt) throws SQLException {
         // Verificar si hay datos
         var rs = stmt.executeQuery("SELECT COUNT(*) AS count FROM productos");
         if (rs.next() && rs.getInt("count") == 0) {
             String[] semillas = {
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P001', 'Zapato Oxford', 'Elegante', 45, 120.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P002', 'Zapatillas Run X', 'Deportivo', 12, 150.50)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P003', 'Botas Seguridad', 'Industrial', 8, 180.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P004', 'Mocasines', 'Casual', 34, 90.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P005', 'Tenis Urbanos', 'Urbano', 50, 110.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P006', 'Sandalias Verano', 'Temporada', 120, 45.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P007', 'Botines Cuero', 'Elegante', 30, 160.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P008', 'Zapatos Vestir', 'Elegante', 25, 135.00)",
-                "INSERT INTO productos (codigo, nombre, categoria, stock, precio) VALUES ('P009', 'Deportivos', 'Deportivo', 40, 95.00)"
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P001', 'Zapato Oxford', 'Elegante', 58, 120.00, '38:5, 39:10, 40:15, 42:8, 44:20')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P002', 'Zapatillas Run X', 'Deportivo', 42, 150.50, '39:8, 40:12, 41:10, 42:7, 44:5')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P003', 'Botas Seguridad', 'Industrial', 35, 180.00, '40:10, 41:10, 42:10, 44:5')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P004', 'Mocasines', 'Casual', 34, 90.00, '38:6, 39:8, 40:10, 42:6, 44:4')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P005', 'Tenis Urbanos', 'Urbano', 50, 110.00, '39:10, 40:15, 41:15, 42:10')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P006', 'Sandalias Verano', 'Temporada', 60, 45.00, '38:15, 39:15, 40:15, 41:15')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P007', 'Botines Cuero', 'Elegante', 38, 160.00, '39:8, 40:10, 41:10, 42:10')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P008', 'Zapatos Vestir', 'Elegante', 40, 135.00, '39:10, 40:10, 41:10, 42:10')",
+                "INSERT INTO productos (codigo, nombre, categoria, stock, precio, tallas) VALUES ('P009', 'Deportivos', 'Deportivo', 40, 95.00, '40:10, 41:10, 42:10, 44:10')"
             };
             for (String sql : semillas) {
                 stmt.execute(sql);

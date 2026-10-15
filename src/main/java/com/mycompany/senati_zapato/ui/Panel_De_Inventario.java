@@ -451,7 +451,33 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
             }
         }
         
+        JTextField txtTallas = new JTextField(producto != null && producto.Get_Tallas() != null ? producto.Get_Tallas() : "38:5, 39:10, 40:15, 42:8, 44:20");
+        txtTallas.putClientProperty("JTextField.placeholderText", "Ej: 38:5, 39:10, 40:15, 42:8, 44:20");
         JTextField txtStock = new JTextField(producto != null ? String.valueOf(producto.Get_Stock()) : "0");
+        txtStock.setToolTipText("Se calcula automáticamente al ingresar tallas en formato '38:5, 44:20'");
+
+        txtTallas.getDocument().addDocumentListener(new DocumentListener() {
+            private void autoSumar() {
+                String t = txtTallas.getText().trim();
+                if (t.contains(":")) {
+                    int suma = 0;
+                    for (String token : t.split("[,;]+")) {
+                        if (token.contains(":")) {
+                            try {
+                                suma += Integer.parseInt(token.split(":")[1].trim());
+                            } catch (Exception ignored) {}
+                        }
+                    }
+                    if (suma > 0) {
+                        txtStock.setText(String.valueOf(suma));
+                    }
+                }
+            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { autoSumar(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { autoSumar(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { autoSumar(); }
+        });
+
         JTextField txtPrecio = new JTextField(producto != null ? String.valueOf(producto.Get_Precio()) : "0.0");
         
         JTextField txtUrlImagen = new JTextField(producto != null && producto.Get_Url_Imagen() != null ? producto.Get_Url_Imagen() : "");
@@ -611,8 +637,8 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
             }
         };
 
-        javax.swing.JComponent[] fieldContainers = {txtCodigo, txtNombre, cbCategoria, txtStock, txtPrecio, panelImagen, lblPreview};
-        for (javax.swing.JComponent tf : new javax.swing.JComponent[]{txtCodigo, txtNombre, cbCategoria, txtStock, txtPrecio, txtUrlImagen}) {
+        javax.swing.JComponent[] fieldContainers = {txtCodigo, txtNombre, cbCategoria, txtTallas, txtStock, txtPrecio, panelImagen, lblPreview};
+        for (javax.swing.JComponent tf : new javax.swing.JComponent[]{txtCodigo, txtNombre, cbCategoria, txtTallas, txtStock, txtPrecio, txtUrlImagen}) {
             tf.setFont(new Font("Inter", Font.PLAIN, 15));
             tf.setPreferredSize(new Dimension(280, 38));
             tf.addKeyListener(keyNav);
@@ -632,7 +658,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
 
         JLabel[] labels = {
             new JLabel("Código:"), new JLabel("Nombre:"), new JLabel("Categoría:"),
-            new JLabel("Stock:"), new JLabel("Precio (S/):"), new JLabel("Imagen:"), new JLabel("Producto:")
+            new JLabel("Tallas (Stock):"), new JLabel("Stock Total:"), new JLabel("Precio (S/):"), new JLabel("Imagen:"), new JLabel("Producto:")
         };
         
         for (int i = 0; i < labels.length; i++) {
@@ -748,7 +774,7 @@ public class Panel_De_Inventario extends javax.swing.JPanel {
                     cbCategoria.getSelectedItem().toString(),
                     Integer.parseInt(txtStock.getText().trim().isEmpty() ? "0" : txtStock.getText().trim()),
                     Double.parseDouble(txtPrecio.getText().trim().isEmpty() ? "0" : txtPrecio.getText().trim()),
-                    producto != null && producto.Get_Tallas() != null ? producto.Get_Tallas() : "38,39,40,41,42",
+                    txtTallas.getText().trim().isEmpty() ? "38:5, 39:10, 40:15, 42:8, 44:20" : txtTallas.getText().trim(),
                     txtUrlImagen.getText().trim()
                 );
                 
