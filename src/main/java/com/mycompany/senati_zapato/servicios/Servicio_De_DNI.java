@@ -47,22 +47,47 @@ public class Servicio_De_DNI {
         return d;
     }
 
-    private static String Obtener_Token() {
-        String token = Configuracion.Obtener_Decoelecta_Api_Key();
-        if (token == null || token.isBlank()) return null;
-        return token;
+    public static java.util.List<String> Obtener_Tokens_Decolecta() {
+        java.util.List<String> tokens = new java.util.ArrayList<>();
+        String primary = Configuracion.Obtener_Decoelecta_Api_Key();
+        if (primary != null && !primary.isBlank()) {
+            tokens.add(primary.trim());
+        }
+        String claves = Configuracion.Obtener("DECOLECTA_CLAVES", "");
+        if (claves != null && !claves.isBlank()) {
+            for (String k : claves.split(",")) {
+                k = k.trim();
+                if (!k.isEmpty() && !tokens.contains(k)) {
+                    tokens.add(k);
+                }
+            }
+        }
+        return tokens;
     }
 
     private static String Hacer_Get(String url) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Authorization", "Bearer " + Obtener_Token())
-                .header("Accept", "application/json")
-                .timeout(java.time.Duration.ofSeconds(5))
-                .GET().build();
-        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) return null;
-        return response.body();
+        java.util.List<String> tokens = Obtener_Tokens_Decolecta();
+        if (tokens.isEmpty()) return null;
+
+        for (String token : tokens) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Authorization", "Bearer " + token)
+                        .header("Accept", "application/json")
+                        .timeout(java.time.Duration.ofSeconds(5))
+                        .GET().build();
+                HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    return response.body();
+                } else {
+                    System.err.println("[Decolecta] Token devolvió estado " + response.statusCode() + ". Probando siguiente...");
+                }
+            } catch (Exception ex) {
+                System.err.println("[Decolecta] Error en solicitud: " + ex.getMessage());
+            }
+        }
+        return null;
     }
 
     /**
@@ -70,7 +95,7 @@ public class Servicio_De_DNI {
      */
     public static String Consultar_Nombres(String dni) {
         try {
-            if (Obtener_Token() == null || dni == null || !dni.matches("\\d{8}")) return null;
+            if (Obtener_Tokens_Decolecta().isEmpty() || dni == null || !dni.matches("\\d{8}")) return null;
 
             String body = Hacer_Get(URL_DNI + dni);
             if (body == null) return null;
@@ -97,7 +122,7 @@ public class Servicio_De_DNI {
      */
     public static String Consultar_Razon_Social(String ruc) {
         try {
-            if (Obtener_Token() == null || ruc == null || !ruc.matches("\\d{11}")) return null;
+            if (Obtener_Tokens_Decolecta().isEmpty() || ruc == null || !ruc.matches("\\d{11}")) return null;
 
             String body = Hacer_Get(URL_RUC + ruc);
             if (body == null) return null;

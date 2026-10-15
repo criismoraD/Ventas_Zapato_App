@@ -13,7 +13,7 @@ public class Dialogo_De_Comprador extends JDialog {
     private final JComboBox<String> cmbTipo = new JComboBox<>(new String[]{"DNI", "RUC"});
     private final JTextField txtDocumento = new JTextField();
     private final JTextField txtNombres = new JTextField();
-    private final JTextField txtTelefono = new JTextField();
+    private final JTextField txtTelefono = null;
     private final JTextField txtCorreo = null;
     private final JTextField txtDireccion = null;
     private final JLabel lblEstado = new JLabel("Complete los datos del comprador o elija «Venta general» para continuar sin registrarlos.");
@@ -22,7 +22,7 @@ public class Dialogo_De_Comprador extends JDialog {
 
     public Dialogo_De_Comprador(Frame parent) {
         super(parent, "Datos del comprador", true);
-        setSize(590, 510);
+        setSize(590, 430);
         setLocationRelativeTo(parent);
         configurarCampoDocumento();
         construirUI();
@@ -229,7 +229,6 @@ public class Dialogo_De_Comprador extends JDialog {
         c.weightx = 1;
         agregarCampo(formulario, c, 0, "Documento", cmbTipo, txtDocumento);
         agregarCampo(formulario, c, 1, "Nombres / razón social", txtNombres, null);
-        agregarCampo(formulario, c, 2, "Teléfono", txtTelefono, null);
         contenido.add(formulario, BorderLayout.CENTER);
 
         JButton btnBuscar = crearBoton("Buscar comprador", Gestor_De_Temas.getNavColor());
@@ -315,7 +314,6 @@ public class Dialogo_De_Comprador extends JDialog {
         }
         cliente = encontrado;
         txtNombres.setText(encontrado.getNombres());
-        txtTelefono.setText(encontrado.getTelefono());
         lblEstado.setText("Comprador encontrado. Verifique los datos y continúe.");
         lblEstado.setForeground(new Color(79, 133, 87));
     }
@@ -341,7 +339,9 @@ public class Dialogo_De_Comprador extends JDialog {
             cliente.setNumeroDocumento(txtDocumento.getText().trim());
         }
         cliente.setNombres(nombres);
-        cliente.setTelefono(txtTelefono.getText().trim());
+        if (cliente.getTelefono() == null) {
+            cliente.setTelefono("");
+        }
         try {
             if (cliente.getId() == 0) {
                 Cliente previo = clienteDAO.buscarPorDocumento(cliente.getTipoDocumento(), cliente.getNumeroDocumento());

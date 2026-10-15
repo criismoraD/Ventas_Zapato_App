@@ -17,13 +17,17 @@ mkdir "%DATA_DIR%\comprobantes"
 
 :: 1. Copiar el Ejecutable
 echo.
-echo [1/3] Copiando ejecutable...
+echo [1/3] Copiando ejecutable y configuracion...
 if exist "target\SENATI_ZAPATO.exe" (
     copy "target\SENATI_ZAPATO.exe" "%DIST_DIR%\" >nul
     echo   OK - SENATI_ZAPATO.exe copiado.
 ) else (
     echo   ERROR: No se encontro target\SENATI_ZAPATO.exe. Compila primero el proyecto.
     goto end
+)
+if exist ".env" (
+    copy ".env" "%DIST_DIR%\" >nul
+    echo   OK - Archivo .env copiado.
 )
 
 :: 2. Copiar Datos Locales Nuevos (si existen)

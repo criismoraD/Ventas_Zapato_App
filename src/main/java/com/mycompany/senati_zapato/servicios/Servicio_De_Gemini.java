@@ -302,6 +302,16 @@ public class Servicio_De_Gemini {
     private final Dao_De_Producto productoDAO;
     private final Dao_De_Venta ventaDAO;
     private String apiKeyError;
+    private Client clientRespaldo;
+
+    private static class ClientEntry {
+        final Client client;
+        final String nombre;
+        ClientEntry(Client client, String nombre) {
+            this.client = client;
+            this.nombre = nombre;
+        }
+    }
 
     public Servicio_De_Gemini() {
         this.productoDAO = new Dao_De_Producto();
@@ -311,17 +321,22 @@ public class Servicio_De_Gemini {
 
     /** (Re)lee API key + modelos desde Configuracion y reconstruye client/tools. */
     public final void Reconectar() {
-        String keyOrError;
         Client c = null;
+        Client cRespaldo = null;
         String err = null;
         try {
-            keyOrError = Obtener_Api_Key();
-            c = Client.builder().apiKey(keyOrError).build();
+            String principal = Obtener_Api_Key();
+            c = Client.builder().apiKey(principal).build();
+            String respaldo = com.mycompany.senati_zapato.utilidades.Configuracion.Obtener_Gemini_Api_Key_Respaldo();
+            if (respaldo != null && !respaldo.equals(principal)) {
+                cRespaldo = Client.builder().apiKey(respaldo).build();
+            }
         } catch (IllegalStateException ex) {
             err = ex.getMessage();
             System.err.println("[Gemini] " + err);
         }
         this.client = c;
+        this.clientRespaldo = cRespaldo;
         this.apiKeyError = err;
         this.model = com.mycompany.senati_zapato.utilidades.Configuracion.Obtener_Modelo_Chat();
         this.history.clear();
@@ -1169,49 +1184,57 @@ public class Servicio_De_Gemini {
             StringBuilder todoTexto = new StringBuilder();
             List<String> chunksOk = new ArrayList<>();
             String errorFinal = null;
-            for (String m : candidatos) {
-                // La conversacion arranca con la memoria de turnos anteriores y anade el
-                // mensaje actual. Antes se creaba vacia en cada llamada (una sola entrada),
-                // por eso el asistente no recordaba de que se hablaba.
-                List<Content> conversacion = new ArrayList<>(Memoria_De_Conversacion());
-                conversacion.add(Content.builder().role("user").parts(userParts).build());
-                todoTexto.setLength(0);
-                chunksOk.clear();
-                // El intento 1 (modelo vigente) emite EN VIVO para que la UI vea progreso y su
-                // watchdog de inactividad se reinicie. Los reintentos se bufferean y solo se
-                // sueltan si tienen exito, para no duplicar texto si el modelo caido ya emitio.
-                final boolean esIntentoPrincipal = (m == candidatos.get(0));
-                final boolean[] yaEmitioEnVivo = {false};
-                // El exito lo decide el servicio (hubo texto o tool-call), NO el tamano de la
-                // conversacion: al anadir memoria, conversacion.size() ya es > 1 siempre y
-                // ese chequeo daba exito falso (sebia de un modelo que no respondio nada).
-                try {
-                    boolean respondio = procesarRondaRecursiva(m, conversacion, config, chunk -> {
-                        todoTexto.append(chunk);
-                        chunksOk.add(chunk);
-                        if (esIntentoPrincipal) {
-                            yaEmitioEnVivo[0] = true;
-                            onChunk.accept(chunk);
-                        }
-                    }, 0);
-                    if (respondio) {
-                        if (!yaEmitioEnVivo[0]) {
-                            for (String c : chunksOk) {
-                                onChunk.accept(c);
+
+            List<ClientEntry> clientes = new ArrayList<>();
+            if (this.client != null) {
+                clientes.add(new ClientEntry(this.client, "Principal"));
+            }
+            if (this.clientRespaldo != null && this.clientRespaldo != this.client) {
+                clientes.add(new ClientEntry(this.clientRespaldo, "Respaldo (Paid)"));
+            }
+
+            for (ClientEntry entry : clientes) {
+                Client cli = entry.client;
+                for (String m : candidatos) {
+                    List<Content> conversacion = new ArrayList<>(Memoria_De_Conversacion());
+                    conversacion.add(Content.builder().role("user").parts(userParts).build());
+                    todoTexto.setLength(0);
+                    chunksOk.clear();
+                    final boolean esIntentoPrincipal = (entry == clientes.get(0) && m == candidatos.get(0));
+                    final boolean[] yaEmitioEnVivo = {false};
+                    try {
+                        boolean respondio = procesarRondaRecursiva(cli, m, conversacion, config, chunk -> {
+                            todoTexto.append(chunk);
+                            chunksOk.add(chunk);
+                            if (esIntentoPrincipal) {
+                                yaEmitioEnVivo[0] = true;
+                                onChunk.accept(chunk);
                             }
+                        }, 0);
+                        if (respondio) {
+                            if (!yaEmitioEnVivo[0]) {
+                                for (String c : chunksOk) {
+                                    onChunk.accept(c);
+                                }
+                            }
+                            if (!m.equals(model)) {
+                                model = m;
+                                com.mycompany.senati_zapato.utilidades.Configuracion.Fijar_En_Memoria("GEMINI_MODEL", m);
+                            }
+                            Guardar_En_Memoria(userMessage, todoTexto.toString());
+                            ok = true;
+                            break;
                         }
-                        if (!m.equals(model)) {
-                            model = m;
-                            com.mycompany.senati_zapato.utilidades.Configuracion.Fijar_En_Memoria("GEMINI_MODEL", m);
-                        }
-                        Guardar_En_Memoria(userMessage, todoTexto.toString());
-                        ok = true;
-                        break;
+                        errorFinal = "el modelo no devolvio texto ni herramienta";
+                    } catch (Exception ex) {
+                        errorFinal = ex.getMessage();
+                        System.err.println("[Gemini - " + entry.nombre + "] Modelo " + m + " fallo: " + errorFinal + ". Probando siguiente...");
                     }
-                    errorFinal = "el modelo no devolvio texto ni herramienta";
-                } catch (Exception ex) {
-                    errorFinal = ex.getMessage();
-                    System.err.println("[Gemini] Modelo " + m + " fallo: " + errorFinal + ". Probando siguiente...");
+                }
+                if (ok) {
+                    break;
+                } else if (clientes.size() > 1 && entry == clientes.get(0)) {
+                    System.err.println("[Gemini] Fallaron modelos con clave " + entry.nombre + ". Activando clave de respaldo (Paid)...");
                 }
             }
             if (!ok) {
@@ -1288,11 +1311,11 @@ public class Servicio_De_Gemini {
      * NO sobre un historial persistente (sin bot interno entrenado).
      * @return true si el modelo produjo texto o invoco alguna herramienta en esta llamada.
      */
-    private boolean procesarRondaRecursiva(String modelo, List<Content> conversacion, GenerateContentConfig config, Consumer<String> onChunk, int ronda) {
+    private boolean procesarRondaRecursiva(Client activeClient, String modelo, List<Content> conversacion, GenerateContentConfig config, Consumer<String> onChunk, int ronda) {
         // CASO BASE: límite de rondas alcanzado. Antes se terminaba en silencio y el usuario
         // se quedaba sin respuesta; ahora se fuerza una redacción final sin herramientas.
         if (ronda >= 5) {
-            return responderSinHerramientas(modelo, conversacion, config, onChunk);
+            return responderSinHerramientas(activeClient, modelo, conversacion, config, onChunk);
         }
 
         StringBuilder fullResponse = new StringBuilder();
@@ -1304,7 +1327,7 @@ public class Servicio_De_Gemini {
         List<Part> partesRazonamiento = new ArrayList<>();
         List<Part> partesFunctionCall = new ArrayList<>();
 
-        try (ResponseStream<GenerateContentResponse> stream = client.models.generateContentStream(modelo, conversacion, config)) {
+        try (ResponseStream<GenerateContentResponse> stream = activeClient.models.generateContentStream(modelo, conversacion, config)) {
             for (GenerateContentResponse res : stream) {
                 if (res.candidates().isEmpty() || res.candidates().get().get(0).content().isEmpty()
                         || res.candidates().get().get(0).content().get().parts().isEmpty()) {
@@ -1364,7 +1387,7 @@ public class Servicio_De_Gemini {
                 .build());
 
         // Llamada recursiva para procesar la siguiente ronda con los resultados
-        return procesarRondaRecursiva(modelo, conversacion, config, onChunk, ronda + 1);
+        return procesarRondaRecursiva(activeClient, modelo, conversacion, config, onChunk, ronda + 1);
     }
 
     /**
@@ -1374,7 +1397,7 @@ public class Servicio_De_Gemini {
      *
      * @return true si el modelo redacto alguna respuesta.
      */
-    private boolean responderSinHerramientas(String modelo, List<Content> conversacion,
+    private boolean responderSinHerramientas(Client activeClient, String modelo, List<Content> conversacion,
                                              GenerateContentConfig config, Consumer<String> onChunk) {
         boolean respondio = false;
         try {
@@ -1383,7 +1406,7 @@ public class Servicio_De_Gemini {
                     .toolConfig((ToolConfig) null)
                     .build();
             try (ResponseStream<GenerateContentResponse> stream =
-                         client.models.generateContentStream(modelo, conversacion, finalConfig)) {
+                         activeClient.models.generateContentStream(modelo, conversacion, finalConfig)) {
                 for (GenerateContentResponse res : stream) {
                     if (res.candidates().isEmpty() || res.candidates().get().get(0).content().isEmpty()
                             || res.candidates().get().get(0).content().get().parts().isEmpty()) {

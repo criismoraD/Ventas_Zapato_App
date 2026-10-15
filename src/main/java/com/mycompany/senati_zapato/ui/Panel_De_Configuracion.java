@@ -25,6 +25,8 @@ public class Panel_De_Configuracion extends JPanel {
 
     protected final JPasswordField txtApiKey = new JPasswordField(28);
     protected final JLabel lblEstadoKey = new JLabel();
+    protected final JPasswordField txtApiKeyRespaldo = new JPasswordField(28);
+    protected final JLabel lblEstadoKeyRespaldo = new JLabel();
     protected final JComboBox<String> cmbModeloChat;
     protected final JComboBox<String> cmbModeloVoz;
     protected final JComboBox<String> cmbThinking;
@@ -54,7 +56,7 @@ public class Panel_De_Configuracion extends JPanel {
         JLabel titulo = new JLabel("Configuracion del Asistente IA");
         titulo.setFont(new Font("Inter", Font.BOLD, 26));
         titulo.setForeground(Gestor_De_Temas.getTextColor());
-        JLabel subt = new JLabel("Pega tu API Key de Gemini y elige los modelos. Se guardan en .env.");
+        JLabel subt = new JLabel("Configura tus API Keys de Gemini (Principal y Respaldo) y modelos. Se guardan en .env.");
         subt.setFont(new Font("Inter", Font.PLAIN, 14));
         subt.setForeground(Gestor_De_Temas.getMutedColor());
         JPanel head = new JPanel(new BorderLayout(4, 4));
@@ -72,17 +74,31 @@ public class Panel_De_Configuracion extends JPanel {
         int fila = 0;
 
         g.gridx = 0; g.gridy = fila; g.weightx = 0;
-        form.add(new JLabel("GEMINI_API_KEY:"), g);
+        form.add(new JLabel("GEMINI_API_KEY (Principal / Free):"), g);
         g.gridx = 1; g.weightx = 1;
         txtApiKey.setFont(new Font("Consolas", Font.PLAIN, 13));
         form.add(txtApiKey, g);
         fila++;
 
         g.gridx = 0; g.gridy = fila; g.weightx = 0;
-        form.add(new JLabel("Estado:"), g);
+        form.add(new JLabel("Estado Principal:"), g);
         g.gridx = 1; g.weightx = 1;
         lblEstadoKey.setFont(new Font("Inter", Font.BOLD, 13));
         form.add(lblEstadoKey, g);
+        fila++;
+
+        g.gridx = 0; g.gridy = fila; g.weightx = 0;
+        form.add(new JLabel("GEMINI_API_KEY_PAID (Respaldo / Pago):"), g);
+        g.gridx = 1; g.weightx = 1;
+        txtApiKeyRespaldo.setFont(new Font("Consolas", Font.PLAIN, 13));
+        form.add(txtApiKeyRespaldo, g);
+        fila++;
+
+        g.gridx = 0; g.gridy = fila; g.weightx = 0;
+        form.add(new JLabel("Estado Respaldo:"), g);
+        g.gridx = 1; g.weightx = 1;
+        lblEstadoKeyRespaldo.setFont(new Font("Inter", Font.BOLD, 13));
+        form.add(lblEstadoKeyRespaldo, g);
         fila++;
 
         g.gridx = 0; g.gridy = fila;
@@ -155,17 +171,28 @@ public class Panel_De_Configuracion extends JPanel {
     public void Cargar_Valores() {
         String key = "";
         try {
-            key = Configuracion.Obtener_Gemini_Api_Key();
+            key = Configuracion.Obtener("GEMINI_API_KEY", "");
         } catch (Exception ex) {
             key = "";
         }
-        // Muestra la key del .env por defecto para editarla (pedido del usuario).
-        // Al guardar, si el campo queda vacio se conserva la actual.
         txtApiKey.setText(key != null ? key : "");
         txtApiKey.putClientProperty("keyActual", key);
-        boolean hay = key != null && !key.isBlank();
+        boolean hay = Configuracion.esKeyValida(key);
         lblEstadoKey.setText(hay ? "Configurada: " + Configuracion.Enmascarar(key) : "Sin configurar");
         lblEstadoKey.setForeground(hay ? new Color(79, 133, 87) : new Color(178, 74, 74));
+
+        String keyRespaldo = "";
+        try {
+            keyRespaldo = Configuracion.Obtener_Gemini_Api_Key_Respaldo();
+        } catch (Exception ex) {
+            keyRespaldo = "";
+        }
+        txtApiKeyRespaldo.setText(keyRespaldo != null ? keyRespaldo : "");
+        txtApiKeyRespaldo.putClientProperty("keyActual", keyRespaldo);
+        boolean hayRespaldo = Configuracion.esKeyValida(keyRespaldo);
+        lblEstadoKeyRespaldo.setText(hayRespaldo ? "Configurada (Paid): " + Configuracion.Enmascarar(keyRespaldo) : "Sin configurar (opcional)");
+        lblEstadoKeyRespaldo.setForeground(hayRespaldo ? new Color(79, 133, 87) : Gestor_De_Temas.getMutedColor());
+
         cmbModeloChat.setSelectedItem(Configuracion.Obtener_Modelo_Chat());
         cmbModeloVoz.setSelectedItem(Configuracion.Obtener_Modelo_Voz());
         cmbThinking.setSelectedItem(Configuracion.Obtener_Thinking_Level());
@@ -177,19 +204,34 @@ public class Panel_De_Configuracion extends JPanel {
     public void Guardar() {
         String nueva = new String(txtApiKey.getPassword()).trim();
         String actual = (String) txtApiKey.getClientProperty("keyActual");
+        String nuevaRespaldo = new String(txtApiKeyRespaldo.getPassword()).trim();
+        String actualRespaldo = (String) txtApiKeyRespaldo.getClientProperty("keyActual");
+
         java.util.Map<String, String> cambios = new java.util.HashMap<>();
         if (!nueva.isEmpty()) {
-            if (!nueva.startsWith("AIza") || nueva.length() < 20) {
-                javax.swing.JOptionPane.showMessageDialog(this, "Key no valida (debe empezar con AIza...).",
+            if (nueva.length() < 15) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Key principal no valida (minimo 15 caracteres).",
                     "API Key", javax.swing.JOptionPane.WARNING_MESSAGE);
                 return;
             }
             cambios.put("GEMINI_API_KEY", nueva);
         } else if (actual == null || actual.isBlank()) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Pega tu API Key primero.",
-                "API Key", javax.swing.JOptionPane.WARNING_MESSAGE);
-            return;
+            if (nuevaRespaldo.isEmpty() && (actualRespaldo == null || actualRespaldo.isBlank())) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Ingresa al menos una API Key de Gemini.",
+                    "API Key", javax.swing.JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
+
+        if (!nuevaRespaldo.isEmpty()) {
+            if (nuevaRespaldo.length() < 15) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Key de respaldo no valida (minimo 15 caracteres).",
+                    "API Key", javax.swing.JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            cambios.put("GEMINI_API_KEY_PAID", nuevaRespaldo);
+        }
+
         cambios.put("GEMINI_MODEL", (String) cmbModeloChat.getSelectedItem());
         cambios.put("GEMINI_LIVE_MODEL", (String) cmbModeloVoz.getSelectedItem());
         cambios.put("GEMINI_THINKING", (String) cmbThinking.getSelectedItem());
@@ -197,7 +239,8 @@ public class Panel_De_Configuracion extends JPanel {
         cambios.put("GEMINI_MODELS", String.join(",", Configuracion.MODELOS_CHAT));
         try {
             Configuracion.Guardar_En_Env(cambios);
-            txtApiKey.putClientProperty("keyActual", Configuracion.Obtener_Gemini_Api_Key());
+            txtApiKey.putClientProperty("keyActual", Configuracion.Obtener("GEMINI_API_KEY", ""));
+            txtApiKeyRespaldo.putClientProperty("keyActual", Configuracion.Obtener_Gemini_Api_Key_Respaldo());
             Cargar_Valores();
             javax.swing.JOptionPane.showMessageDialog(this, "Guardado en:\n" + Configuracion.Ruta_Env(),
                 "Configuracion", javax.swing.JOptionPane.INFORMATION_MESSAGE);
@@ -211,6 +254,12 @@ public class Panel_De_Configuracion extends JPanel {
         String k0 = new String(txtApiKey.getPassword()).trim();
         if (k0.isEmpty()) {
             k0 = (String) txtApiKey.getClientProperty("keyActual");
+        }
+        if (k0 == null || k0.isBlank()) {
+            k0 = new String(txtApiKeyRespaldo.getPassword()).trim();
+            if (k0.isEmpty()) {
+                k0 = (String) txtApiKeyRespaldo.getClientProperty("keyActual");
+            }
         }
         if (k0 == null || k0.isBlank()) {
             javax.swing.JOptionPane.showMessageDialog(this, "Pega primero tu API Key.",

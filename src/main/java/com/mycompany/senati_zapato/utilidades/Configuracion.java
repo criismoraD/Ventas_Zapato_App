@@ -132,15 +132,29 @@ public final class Configuracion {
     }
 
     /**
-     * Retorna la API Key de Gemini o lanza una excepción con instrucciones claras.
+     * Valida que una clave no esté vacía ni sea un placeholder de ejemplo.
+     */
+    public static boolean esKeyValida(String key) {
+        return key != null && !key.isBlank() && !key.contains("PEGA_AQUI") && !key.contains("TU_API_KEY");
+    }
+
+    /**
+     * Retorna la API Key principal de Gemini (o la de respaldo si no hay principal)
+     * o lanza una excepción con instrucciones claras.
      */
     public static String Obtener_Gemini_Api_Key() {
         String key = Obtener("GEMINI_API_KEY", "");
-        if (key == null || key.isBlank() || key.contains("PEGA_AQUI") || key.contains("TU_API_KEY")) {
+        if (!esKeyValida(key)) {
+            key = Obtener("GEMINI_API_KEY_PAID", "");
+        }
+        if (!esKeyValida(key)) {
+            key = Obtener("GEMINI_API_KEY_BACKUP", "");
+        }
+        if (!esKeyValida(key)) {
             throw new IllegalStateException(
                 "Falta la variable GEMINI_API_KEY.\n"
                 + "1) Crea un archivo .env junto al .jar/.exe con:\n"
-                + "     GEMINI_API_KEY=AIza...\n"
+                + "     GEMINI_API_KEY=AIza... (o GEMINI_API_KEY_PAID=...)\n"
                 + "   Consigue tu key gratis en: https://aistudio.google.com/apikey\n"
                 + "2) O expórtala como variable de entorno de Windows:\n"
                 + "     setx GEMINI_API_KEY \"AIza...\"  (reinicia la terminal/IDE)\n"
@@ -149,12 +163,61 @@ public final class Configuracion {
         return key;
     }
 
-    public static String Obtener_Decoelecta_Api_Key() {
-        return Obtener("DECOLECTA_API_KEY", "");
+    /**
+     * Retorna la clave de respaldo/pago (GEMINI_API_KEY_PAID o GEMINI_API_KEY_BACKUP)
+     * si está configurada y es válida; de lo contrario retorna null.
+     */
+    public static String Obtener_Gemini_Api_Key_Respaldo() {
+        String paid = Obtener("GEMINI_API_KEY_PAID", "");
+        if (esKeyValida(paid)) {
+            return paid;
+        }
+        String backup = Obtener("GEMINI_API_KEY_BACKUP", "");
+        if (esKeyValida(backup)) {
+            return backup;
+        }
+        return null;
     }
 
     /**
-     * true si hay una key utilizable (para degradar el chatbot con un mensaje amable).
+     * Retorna la lista en orden de prioridad de todas las API keys válidas encontradas
+     * (Principal -> Pago/Respaldo).
+     */
+    public static java.util.List<String> Obtener_Todas_Las_Api_Keys() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        String primary = Obtener("GEMINI_API_KEY", "");
+        if (esKeyValida(primary)) {
+            out.add(primary);
+        }
+        String paid = Obtener("GEMINI_API_KEY_PAID", "");
+        if (esKeyValida(paid) && !out.contains(paid)) {
+            out.add(paid);
+        }
+        String backup = Obtener("GEMINI_API_KEY_BACKUP", "");
+        if (esKeyValida(backup) && !out.contains(backup)) {
+            out.add(backup);
+        }
+        return out;
+    }
+
+    public static String Obtener_Decoelecta_Api_Key() {
+        String key = Obtener("DECOLECTA_API_KEY", "");
+        if (!esKeyValida(key)) {
+            String claves = Obtener("DECOLECTA_CLAVES", "");
+            if (claves != null && !claves.isBlank()) {
+                String[] partes = claves.split(",");
+                if (partes.length >= 3 && esKeyValida(partes[2])) {
+                    return partes[2].trim();
+                } else if (partes.length > 0 && esKeyValida(partes[0])) {
+                    return partes[0].trim();
+                }
+            }
+        }
+        return key != null ? key.trim() : "";
+    }
+
+    /**
+     * true si hay al menos una key utilizable (para degradar el chatbot con un mensaje amable).
      */
     public static boolean Hay_Gemini_Api_Key() {
         try {

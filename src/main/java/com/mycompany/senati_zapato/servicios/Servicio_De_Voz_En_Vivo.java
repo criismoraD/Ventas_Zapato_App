@@ -117,8 +117,9 @@ public class Servicio_De_Voz_En_Vivo {
     private void runLive() {
         try {
             status("Conectando modo voz...");
+            String primaryKey = Servicio_De_Gemini.Obtener_Api_Key();
             client = Client.builder()
-                    .apiKey(Servicio_De_Gemini.Obtener_Api_Key())
+                    .apiKey(primaryKey)
                     .httpOptions(HttpOptions.builder().apiVersion("v1beta").build())
                     .build();
 
@@ -140,7 +141,25 @@ public class Servicio_De_Voz_En_Vivo {
                     .tools(buildLiveTools())
                     .build();
 
-            session = Conectar_Live_Con_Fallback(config);
+            try {
+                session = Conectar_Live_Con_Fallback(config);
+            } catch (Exception e1) {
+                String respaldoKey = com.mycompany.senati_zapato.utilidades.Configuracion.Obtener_Gemini_Api_Key_Respaldo();
+                if (respaldoKey != null && !respaldoKey.equals(primaryKey)) {
+                    status("Probando modo voz con API Key de respaldo (Paid)...");
+                    if (client != null) {
+                        try { client.close(); } catch (Exception ignored) {}
+                    }
+                    client = Client.builder()
+                            .apiKey(respaldoKey)
+                            .httpOptions(HttpOptions.builder().apiVersion("v1beta").build())
+                            .build();
+                    session = Conectar_Live_Con_Fallback(config);
+                } else {
+                    throw e1;
+                }
+            }
+
             openAudio();
             session.receive(this::handleServerMessage);
             startMicLoop();
