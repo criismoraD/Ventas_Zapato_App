@@ -23,6 +23,7 @@ public class Servicio_De_Gemini {
 
     private Consumer<String> onNavigate;
     private java.util.function.BiFunction<String, Integer, String> onAddCart;
+    private CartAddFunction onAddCartWithTalla;
     private java.util.function.Supplier<String> onCheckout;
     private java.util.function.Supplier<String> onCancel;
     private java.util.function.Supplier<String> onVentaGeneral;
@@ -31,12 +32,21 @@ public class Servicio_De_Gemini {
     // (color, precio, talla, categoria). Devuelve un resumen legible para el modelo.
     private java.util.function.Function<String, String> onShowInSales;
 
+    @FunctionalInterface
+    public interface CartAddFunction {
+        String apply(String producto, int cantidad, String talla);
+    }
+
     public void setOnNavigate(Consumer<String> onNavigate) {
         this.onNavigate = onNavigate;
     }
 
     public void setOnAddCart(java.util.function.BiFunction<String, Integer, String> onAddCart) {
         this.onAddCart = onAddCart;
+    }
+
+    public void setOnAddCart(CartAddFunction onAddCartWithTalla) {
+        this.onAddCartWithTalla = onAddCartWithTalla;
     }
 
     public void setOnCheckout(java.util.function.Supplier<String> onCheckout) {
@@ -271,7 +281,9 @@ public class Servicio_De_Gemini {
         "cuando el usuario la pida o acepte omitir el registro («venta general», «sin datos», «omítelo»), usa obligatoriamente la herramienta venta_general " +
         "para confirmarla en el formulario abierto, y al recibir su resultado indica «Ahora selecciona el método de pago» en la ventana que se abrió; " +
         "solo después indica que debe elegir el método de pago, completar los datos, verificar la aprobación y pulsar el botón de confirmación; " +
-        "nunca afirmes que el pago ya fue realizado hasta que el sistema confirme la venta. Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
+        "nunca afirmes que el pago ya fue realizado hasta que el sistema confirme la venta. " +
+        "Si el usuario pide agregar, añadir o vender un producto al carrito, usa la herramienta 'agregar_carrito'. Si especificó una talla (ejemplo 'talla 41', 'en 42'), incluye siempre el parámetro 'talla'. " +
+        "Si pide cancelar o vaciar carrito, usa la herramienta cancelar_orden. " +
         "Si el usuario pide activar o desactivar el modo oscuro, modo noche o modo claro, usa la herramienta cambiar_modo_oscuro.";
 
     private Client client;
@@ -551,7 +563,8 @@ public class Servicio_De_Gemini {
                                 .type(new Type(Type.Known.OBJECT))
                                 .properties(Map.of(
                                         "producto", Schema.builder().type(new Type(Type.Known.STRING)).description("Nombre o código del producto a agregar").build(),
-                                        "cantidad", Schema.builder().type(new Type(Type.Known.INTEGER)).description("Cantidad a agregar (por defecto 1)").build()
+                                        "cantidad", Schema.builder().type(new Type(Type.Known.INTEGER)).description("Cantidad a agregar (por defecto 1)").build(),
+                                        "talla", Schema.builder().type(new Type(Type.Known.STRING)).description("Talla del calzado a agregar (ejemplo '41', '42'). Pásala si se especificó una talla.").build()
                                 ))
                                 .required(List.of("producto"))
                                 .build())
@@ -887,7 +900,13 @@ public class Servicio_De_Gemini {
                 } else if (rawCant instanceof String) {
                     try { cantidad = Integer.parseInt((String) rawCant); } catch (Exception ignored) {}
                 }
-                if (onAddCart != null) {
+                String talla = null;
+                if (args.containsKey("talla") && args.get("talla") != null) {
+                    talla = String.valueOf(args.get("talla")).trim();
+                }
+                if (onAddCartWithTalla != null) {
+                    return onAddCartWithTalla.apply(producto, Math.max(1, cantidad), talla);
+                } else if (onAddCart != null) {
                     return onAddCart.apply(producto, Math.max(1, cantidad));
                 }
                 return "Error: callback de agregar al carrito no configurado.";

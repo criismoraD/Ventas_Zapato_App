@@ -14,15 +14,21 @@ public class Detalle_De_Venta {
     private int cantidad;
     private double precioUnitario;
     private double subtotal;
+    private String talla = "";
 
     public Detalle_De_Venta() {}
 
     public Detalle_De_Venta(int productoId, String nombreProducto, int cantidad, double precioUnitario, double subtotal) {
+        this(productoId, nombreProducto, cantidad, precioUnitario, subtotal, "");
+    }
+
+    public Detalle_De_Venta(int productoId, String nombreProducto, int cantidad, double precioUnitario, double subtotal, String talla) {
         this.productoId = productoId;
         this.nombreProducto = nombreProducto;
         this.cantidad = cantidad;
         this.precioUnitario = precioUnitario;
         this.subtotal = subtotal;
+        this.talla = (talla != null) ? talla : "";
     }
 
     public int Get_Id() { return id; }
@@ -45,4 +51,7 @@ public class Detalle_De_Venta {
 
     public double Get_Subtotal() { return subtotal; }
     public void setSubtotal(double subtotal) { this.subtotal = subtotal; }
+
+    public String getTalla() { return talla; }
+    public void setTalla(String talla) { this.talla = (talla != null) ? talla : ""; }
 }

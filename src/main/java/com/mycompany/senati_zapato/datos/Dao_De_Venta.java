@@ -149,7 +149,7 @@ public class Dao_De_Venta {
 
     public List<Object[]> obtenerDetallesPorVenta(int ventaId) {
         List<Object[]> detalles = new ArrayList<>();
-        String sql = "SELECT p.nombre, p.precio, dv.cantidad, dv.subtotal " +
+        String sql = "SELECT p.nombre, p.precio, dv.cantidad, dv.subtotal, COALESCE(dv.talla, '') as talla " +
                      "FROM detalles_venta dv " +
                      "JOIN productos p ON dv.producto_id = p.id " +
                      "WHERE dv.venta_id = ?";
@@ -162,7 +162,8 @@ public class Dao_De_Venta {
                         rs.getString("nombre"),
                         rs.getDouble("precio"),
                         rs.getInt("cantidad"),
-                        rs.getDouble("subtotal")
+                        rs.getDouble("subtotal"),
+                        rs.getString("talla")
                     });
                 }
             }

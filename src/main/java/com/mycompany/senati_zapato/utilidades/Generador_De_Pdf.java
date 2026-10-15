@@ -122,8 +122,11 @@ public class Generador_De_Pdf {
             boolean alternate = false;
             for (Object[] d : detalles) {
                 com.itextpdf.kernel.colors.Color rowColor = alternate ? lightBg : ColorConstants.WHITE;
-                
-                table.addCell(createDataCell(String.valueOf(d[0]), rowColor, TextAlignment.LEFT));
+                String desc = String.valueOf(d[0]);
+                if (d.length > 4 && d[4] != null && !String.valueOf(d[4]).isBlank() && !"-".equals(d[4])) {
+                    desc += " (Talla: " + d[4] + ")";
+                }
+                table.addCell(createDataCell(desc, rowColor, TextAlignment.LEFT));
                 table.addCell(createDataCell(String.format("S/ %.2f", (Double)d[1]), rowColor, TextAlignment.CENTER));
                 table.addCell(createDataCell(String.valueOf(d[2]), rowColor, TextAlignment.CENTER));
                 table.addCell(createDataCell(String.format("S/ %.2f", (Double)d[3]), rowColor, TextAlignment.CENTER));

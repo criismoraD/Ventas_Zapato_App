@@ -94,6 +94,10 @@ public class Panel_Principal extends JFrame {
     }
 
     public String Agregar_Producto_Al_Carrito(String busqueda, int cantidad) {
+        return Agregar_Producto_Al_Carrito(busqueda, cantidad, null);
+    }
+
+    public String Agregar_Producto_Al_Carrito(String busqueda, int cantidad, String talla) {
         Cambiar_Pestana("Ventas");
         for (Component comp : contentPanel.getComponents()) {
             Component target = comp;
@@ -101,7 +105,7 @@ public class Panel_Principal extends JFrame {
                 target = ((javax.swing.JScrollPane) comp).getViewport().getView();
             }
             if (target instanceof Panel_De_Ventas) {
-                return ((Panel_De_Ventas) target).Agregar_Producto_Al_Carrito(busqueda, cantidad);
+                return ((Panel_De_Ventas) target).Agregar_Producto_Al_Carrito(busqueda, cantidad, talla);
             }
         }
         return "No se pudo acceder al módulo de Ventas.";

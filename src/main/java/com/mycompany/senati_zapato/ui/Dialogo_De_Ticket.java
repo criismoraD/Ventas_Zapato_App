@@ -79,10 +79,14 @@ public class Dialogo_De_Ticket extends JDialog {
 
         for (Detalle_De_Venta dv : venta.Get_Detalles()) {
             String prodNombre = dv.Get_Nombre_Producto();
-            if (prodNombre.length() > 18) {
-                prodNombre = prodNombre.substring(0, 15) + "...";
+            String tallaStr = dv.getTalla();
+            if (tallaStr != null && !tallaStr.trim().isEmpty() && !tallaStr.equals("-")) {
+                prodNombre = prodNombre + " [T." + tallaStr.trim() + "]";
             }
-            sb.append(String.format(" %-5d  %-18s  %-7.2f  %-7.2f\n", 
+            if (prodNombre.length() > 20) {
+                prodNombre = prodNombre.substring(0, 18) + "..";
+            }
+            sb.append(String.format(" %-5d  %-20s %-7.2f %-7.2f\n", 
                 dv.Get_Cantidad(), 
                 prodNombre, 
                 dv.Get_Precio_Unitario(), 

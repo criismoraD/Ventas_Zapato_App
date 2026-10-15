@@ -348,11 +348,16 @@ public class Servicio_De_Voz_En_Vivo {
             } else if (rawCantidad instanceof String) {
                 try { cantidad = Integer.parseInt((String) rawCantidad); } catch (NumberFormatException ignored) {}
             }
+            String talla = null;
+            if (args.containsKey("talla") && args.get("talla") != null) {
+                talla = String.valueOf(args.get("talla")).trim();
+            }
             if (frame == null) return "No se pudo acceder a la ventana principal.";
             final String[] result = new String[1];
             final int cantidadFinal = Math.max(1, cantidad);
+            final String tallaFinal = talla;
             try {
-                SwingUtilities.invokeAndWait(() -> result[0] = frame.Agregar_Producto_Al_Carrito(producto, cantidadFinal));
+                SwingUtilities.invokeAndWait(() -> result[0] = frame.Agregar_Producto_Al_Carrito(producto, cantidadFinal, tallaFinal));
             } catch (Exception e) {
                 return "No se pudo agregar al carrito: " + e.getMessage();
             }

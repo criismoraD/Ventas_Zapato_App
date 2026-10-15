@@ -87,7 +87,7 @@ public class Procesador_De_Pagos {
             }
 
             // 3. Insertar detalles de la venta
-            String sqlDetalle = "INSERT INTO detalles_venta(venta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES(?, ?, ?, ?, ?)";
+            String sqlDetalle = "INSERT INTO detalles_venta(venta_id, producto_id, cantidad, precio_unitario, subtotal, talla) VALUES(?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstmtDetalle = conn.prepareStatement(sqlDetalle)) {
                 for (Detalle_De_Venta detalle : venta.Get_Detalles()) {
                     pstmtDetalle.setInt(1, ventaId);
@@ -95,6 +95,7 @@ public class Procesador_De_Pagos {
                     pstmtDetalle.setInt(3, detalle.Get_Cantidad());
                     pstmtDetalle.setDouble(4, detalle.Get_Precio_Unitario());
                     pstmtDetalle.setDouble(5, detalle.Get_Subtotal());
+                    pstmtDetalle.setString(6, detalle.getTalla() != null ? detalle.getTalla() : "");
                     pstmtDetalle.executeUpdate();
                 }
             }
@@ -117,13 +118,13 @@ public class Procesador_De_Pagos {
                 }
             }
 
-            // 4.1 Sincronizar el desglose de tallas con el stock descontado
+            // 4.1 Sincronizar el desglose de tallas con las tallas específicas vendidas
             String sqlGetTallas = "SELECT tallas FROM productos WHERE id = ?";
             String sqlUpdateTallas = "UPDATE productos SET tallas = ? WHERE id = ?";
-            try (PreparedStatement pstmtGet = conn.prepareStatement(sqlGetTallas);
-                 PreparedStatement pstmtUpTallas = conn.prepareStatement(sqlUpdateTallas)) {
-                for (Map.Entry<Integer, Integer> entrada : cantidadesPorProducto.entrySet()) {
-                    pstmtGet.setInt(1, entrada.getKey());
+            for (Detalle_De_Venta det : venta.Get_Detalles()) {
+                try (PreparedStatement pstmtGet = conn.prepareStatement(sqlGetTallas);
+                     PreparedStatement pstmtUpTallas = conn.prepareStatement(sqlUpdateTallas)) {
+                    pstmtGet.setInt(1, det.Get_Producto_Id());
                     try (ResultSet rsT = pstmtGet.executeQuery()) {
                         if (rsT.next()) {
                             String tStr = rsT.getString("tallas");
@@ -131,13 +132,19 @@ public class Procesador_De_Pagos {
                                 Producto temp = new Producto();
                                 temp.Set_Tallas(tStr);
                                 java.util.Map<String, Integer> map = temp.Get_Mapa_Stock_Tallas();
-                                int aDescontar = entrada.getValue();
-                                for (Map.Entry<String, Integer> e : map.entrySet()) {
-                                    if (aDescontar <= 0) break;
-                                    int disponible = e.getValue();
-                                    int quitar = Math.min(disponible, aDescontar);
-                                    e.setValue(disponible - quitar);
-                                    aDescontar -= quitar;
+                                String targetTalla = det.getTalla();
+                                int aDescontar = det.Get_Cantidad();
+                                if (targetTalla != null && !targetTalla.isBlank() && map.containsKey(targetTalla)) {
+                                    int actual = map.get(targetTalla);
+                                    map.put(targetTalla, Math.max(0, actual - aDescontar));
+                                } else {
+                                    for (Map.Entry<String, Integer> e : map.entrySet()) {
+                                        if (aDescontar <= 0) break;
+                                        int disponible = e.getValue();
+                                        int quitar = Math.min(disponible, aDescontar);
+                                        e.setValue(disponible - quitar);
+                                        aDescontar -= quitar;
+                                    }
                                 }
                                 StringBuilder sb = new StringBuilder();
                                 for (Map.Entry<String, Integer> e : map.entrySet()) {
@@ -145,7 +152,7 @@ public class Procesador_De_Pagos {
                                     sb.append(e.getKey()).append(":").append(e.getValue());
                                 }
                                 pstmtUpTallas.setString(1, sb.toString());
-                                pstmtUpTallas.setInt(2, entrada.getKey());
+                                pstmtUpTallas.setInt(2, det.Get_Producto_Id());
                                 pstmtUpTallas.executeUpdate();
                             }
                         }

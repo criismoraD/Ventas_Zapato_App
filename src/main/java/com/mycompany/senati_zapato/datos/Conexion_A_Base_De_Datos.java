@@ -178,6 +178,7 @@ public class Conexion_A_Base_De_Datos {
             agregarColumnaSiNoExiste(stmt, "ventas", "estado_pago TEXT DEFAULT 'PENDIENTE_VERIFICACION'");
             agregarColumnaSiNoExiste(stmt, "ventas", "terminal_id TEXT DEFAULT ''");
             agregarColumnaSiNoExiste(stmt, "ventas", "cliente_id INTEGER NULL");
+            agregarColumnaSiNoExiste(stmt, "detalles_venta", "talla TEXT DEFAULT ''");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_metodo_referencia " +
                     "ON ventas(metodo_pago, referencia) WHERE trim(referencia) <> ''");
 

@@ -26,6 +26,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.text.Normalizer;
 
 import javax.swing.AbstractAction;
@@ -150,7 +151,7 @@ public class Panel_De_Ventas extends JPanel {
 
         leftPanel.add(headerCarrito, BorderLayout.NORTH);
 
-        String[] columns = { "ID", "Cant", "Producto", "Total", "X" };
+        String[] columns = { "ID", "Cant", "Producto", "Talla", "Total", "X" };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -163,12 +164,12 @@ public class Panel_De_Ventas extends JPanel {
         cartTable.setRowHeight(48);
         cartTable.setBackground(Gestor_De_Temas.getPanelBgColor());
         cartTable.setForeground(Gestor_De_Temas.getTextColor());
-        cartTable.setFont(new Font("Inter", Font.PLAIN, 15));
+        cartTable.setFont(new Font("Inter", Font.PLAIN, 14));
         cartTable.setShowGrid(false);
         cartTable.setIntercellSpacing(new Dimension(0, 0));
         cartTable.getTableHeader().setBackground(Gestor_De_Temas.getNavColor());
         cartTable.getTableHeader().setForeground(Gestor_De_Temas.getTextColor());
-        cartTable.getTableHeader().setFont(new Font("Inter", Font.BOLD, 14));
+        cartTable.getTableHeader().setFont(new Font("Inter", Font.BOLD, 13));
         cartTable.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Gestor_De_Temas.getBorderColor()));
         
         // Hide ID column
@@ -176,16 +177,18 @@ public class Panel_De_Ventas extends JPanel {
         cartTable.getColumnModel().getColumn(0).setMaxWidth(0);
         cartTable.getColumnModel().getColumn(0).setWidth(0);
         
-        cartTable.getColumnModel().getColumn(1).setPreferredWidth(50); // Cant
-        cartTable.getColumnModel().getColumn(2).setPreferredWidth(200); // Prod
-        cartTable.getColumnModel().getColumn(3).setMinWidth(90); // Total
-        cartTable.getColumnModel().getColumn(3).setMaxWidth(110);
-        cartTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Total
-        cartTable.getColumnModel().getColumn(4).setPreferredWidth(50); // Delete (X)
+        cartTable.getColumnModel().getColumn(1).setPreferredWidth(45); // Cant
+        cartTable.getColumnModel().getColumn(2).setPreferredWidth(140); // Prod
+        cartTable.getColumnModel().getColumn(3).setPreferredWidth(55); // Talla
+        cartTable.getColumnModel().getColumn(4).setMinWidth(75); // Total
+        cartTable.getColumnModel().getColumn(4).setMaxWidth(105);
+        cartTable.getColumnModel().getColumn(4).setPreferredWidth(85); // Total
+        cartTable.getColumnModel().getColumn(5).setPreferredWidth(40); // Delete (X)
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         cartTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        cartTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         
         DefaultTableCellRenderer deleteRenderer = new DefaultTableCellRenderer() {
             @Override
@@ -198,17 +201,19 @@ public class Panel_De_Ventas extends JPanel {
                 return label;
             }
         };
-        cartTable.getColumnModel().getColumn(4).setCellRenderer(deleteRenderer);
+        cartTable.getColumnModel().getColumn(5).setCellRenderer(deleteRenderer);
 
         cartTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int col = cartTable.columnAtPoint(e.getPoint());
                 int row = cartTable.rowAtPoint(e.getPoint());
-                if (col == 4 && row >= 0) { // Clic en 🗑️
+                if (col == 5 && row >= 0) { // Clic en 🗑️
                     String producto = String.valueOf(tableModel.getValueAt(row, 2));
+                    String talla = String.valueOf(tableModel.getValueAt(row, 3));
+                    String info = producto + (talla != null && !talla.isBlank() && !talla.equals("-") ? " (Talla " + talla + ")" : "");
                     String mensaje = "<html><font color='red' size='+1'><b>¿Eliminar del carrito?</b></font><br><br>"
-                            + "<font color='black'>Producto: <b>" + producto + "</b></font></html>";
+                            + "<font color='black'>Producto: <b>" + info + "</b></font></html>";
                     java.awt.Window win = SwingUtilities.getWindowAncestor(cartTable);
                     int resp = JOptionPane.showConfirmDialog(win,
                         mensaje,
@@ -489,14 +494,14 @@ public class Panel_De_Ventas extends JPanel {
         totalColumnVisible = !totalColumnVisible;
         if (cartTable == null) return;
 
-        javax.swing.table.TableColumn colTotal = cartTable.getColumnModel().getColumn(3);
+        javax.swing.table.TableColumn colTotal = cartTable.getColumnModel().getColumn(4);
         javax.swing.table.TableColumn colProducto = cartTable.getColumnModel().getColumn(2);
 
         if (totalColumnVisible) {
-            colTotal.setMinWidth(90);
-            colTotal.setMaxWidth(110);
-            colTotal.setPreferredWidth(100);
-            colProducto.setPreferredWidth(200);
+            colTotal.setMinWidth(75);
+            colTotal.setMaxWidth(105);
+            colTotal.setPreferredWidth(85);
+            colProducto.setPreferredWidth(140);
             boton.setToolTipText("Ocultar la columna Total");
             boton.setIcon(new Icono_Elegante(Icono_Elegante.Type.EYE, 20, Gestor_De_Temas.getMutedColor()));
         } else {
@@ -504,7 +509,7 @@ public class Panel_De_Ventas extends JPanel {
             colTotal.setMaxWidth(0);
             colTotal.setPreferredWidth(0);
             colTotal.setWidth(0);
-            colProducto.setPreferredWidth(300);
+            colProducto.setPreferredWidth(225);
             boton.setToolTipText("Mostrar la columna Total");
             boton.setIcon(new Icono_Elegante(Icono_Elegante.Type.EYE, 20, Gestor_De_Temas.getAccentColor()));
         }
@@ -515,7 +520,7 @@ public class Panel_De_Ventas extends JPanel {
     private void updateTotals() {
         double sub = 0;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            sub += (double) tableModel.getValueAt(i, 3);
+            sub += (double) tableModel.getValueAt(i, 4);
         }
         double igv = sub * 0.18;
         double tot = sub + igv;
@@ -778,11 +783,25 @@ public class Panel_De_Ventas extends JPanel {
     }
 
     public String Agregar_Producto_Al_Carrito(String busqueda, int cantidad) {
+        return Agregar_Producto_Al_Carrito(busqueda, cantidad, null);
+    }
+
+    public String Agregar_Producto_Al_Carrito(String busqueda, int cantidad, String talla) {
         if (busqueda == null || busqueda.trim().isEmpty()) {
             return "Indica el nombre o código del producto.";
         }
         cantidad = Math.max(1, cantidad);
         todosLosProductos = productoDAO.Obtener_Todos();
+
+        // Si no se pasó talla explícita, intentar extraerla de la cadena de búsqueda si existe
+        if (talla == null || talla.isBlank()) {
+            String tallaExtraida = extraerTallaDeTexto(busqueda);
+            if (tallaExtraida != null) {
+                talla = tallaExtraida;
+                busqueda = limpiarTextoDeTalla(busqueda);
+            }
+        }
+
         Producto producto = buscarProductoFlexible(busqueda);
         if (producto == null) {
             return "No encontré un producto parecido a: " + busqueda;
@@ -790,15 +809,43 @@ public class Panel_De_Ventas extends JPanel {
         if (producto.Get_Stock() <= 0 || "Agotado".equalsIgnoreCase(producto.Get_Estado())) {
             return "El producto " + producto.Get_Nombre() + " está agotado.";
         }
+
+        // Si se especificó talla, verificar que la talla exista y tenga stock
+        if (talla != null && !talla.isBlank() && !talla.equals("-")) {
+            int stockTalla = producto.Get_Stock_De_Talla(talla);
+            if (stockTalla <= 0) {
+                return "El producto " + producto.Get_Nombre() + " no tiene stock en talla " + talla + 
+                       ". Tallas disponibles: " + producto.Get_Tallas_Solo_Numeros();
+            }
+        }
+
         int agregados = 0;
         for (int i = 0; i < cantidad; i++) {
-            if (!Agregar_Producto_Al_Carrito(producto, false)) break;
+            if (!Agregar_Producto_Al_Carrito(producto, talla, false)) break;
             agregados++;
         }
         if (agregados == 0) {
-            return "No hay stock suficiente para agregar " + producto.Get_Nombre() + ".";
+            String tallaMsg = (talla != null && !talla.isBlank() && !talla.equals("-")) ? " en talla " + talla : "";
+            return "No hay stock suficiente para agregar " + producto.Get_Nombre() + tallaMsg + ".";
         }
-        return "Agregado al carrito: " + agregados + " x " + producto.Get_Nombre() + ".";
+        String tallaMsg = (talla != null && !talla.isBlank() && !talla.equals("-")) ? " (Talla " + talla + ")" : "";
+        return "Agregado al carrito: " + agregados + " x " + producto.Get_Nombre() + tallaMsg + ".";
+    }
+
+    private String extraerTallaDeTexto(String texto) {
+        if (texto == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)(?:talla|numero|nro|num|t\\.?|en|de)\\s*(\\d{2})\\b").matcher(texto);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
+    }
+
+    private String limpiarTextoDeTalla(String texto) {
+        if (texto == null) return "";
+        return texto.replaceAll("(?i)(?:talla|numero|nro|num|t\\.?)\\s*\\d{2}\\b", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
     }
 
     public String Vaciar_Carrito() {
@@ -825,7 +872,7 @@ public class Panel_De_Ventas extends JPanel {
         }
         double total = 0;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            total += (double) tableModel.getValueAt(i, 3);
+            total += (double) tableModel.getValueAt(i, 4);
         }
         total *= 1.18;
         registrarDiagnosticoCobro("Solicitud de cobro recibida. total=" + total);
@@ -877,11 +924,44 @@ public class Panel_De_Ventas extends JPanel {
     }
 
     private boolean Agregar_Producto_Al_Carrito(Producto prod, boolean mostrarAviso) {
+        return Agregar_Producto_Al_Carrito(prod, null, mostrarAviso);
+    }
+
+    private boolean Agregar_Producto_Al_Carrito(Producto prod, String talla, boolean mostrarAviso) {
+        String tallaReal = (talla != null && !talla.isBlank()) ? talla.trim() : "-";
+        
+        // Si no se especificó talla pero hay un filtro activo o tallas disponibles en el producto
+        if (tallaReal.equals("-")) {
+            if (filtroTalla != null && prod.Get_Stock_De_Talla(filtroTalla) > 0) {
+                tallaReal = filtroTalla;
+            } else {
+                Map<String, Integer> mapTallas = prod.Get_Mapa_Stock_Tallas();
+                if (mapTallas != null && !mapTallas.isEmpty()) {
+                    for (Map.Entry<String, Integer> entry : mapTallas.entrySet()) {
+                        if (entry.getValue() > 0) {
+                            tallaReal = entry.getKey();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Obtener stock disponible para esa talla específica
+        int stockDisponible;
+        if (!tallaReal.equals("-") && prod.Get_Mapa_Stock_Tallas() != null && prod.Get_Mapa_Stock_Tallas().containsKey(tallaReal)) {
+            stockDisponible = prod.Get_Stock_De_Talla(tallaReal);
+        } else {
+            stockDisponible = prod.Get_Stock();
+        }
+
         boolean found = false;
         int actualEnCarrito = 0;
         int rowIdx = -1;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            if ((int)tableModel.getValueAt(i, 0) == prod.Get_Id()) {
+            int rowId = (int) tableModel.getValueAt(i, 0);
+            String rowTalla = String.valueOf(tableModel.getValueAt(i, 3));
+            if (rowId == prod.Get_Id() && rowTalla.equalsIgnoreCase(tallaReal)) {
                 actualEnCarrito = (int) tableModel.getValueAt(i, 1);
                 rowIdx = i;
                 found = true;
@@ -889,19 +969,22 @@ public class Panel_De_Ventas extends JPanel {
             }
         }
 
-        if (actualEnCarrito >= prod.Get_Stock()) {
+        if (actualEnCarrito >= stockDisponible) {
             if (mostrarAviso) {
-                JOptionPane.showMessageDialog(Panel_De_Ventas.this, "No hay suficiente stock disponible para este producto.", "Sin Stock", JOptionPane.WARNING_MESSAGE);
+                String msg = !tallaReal.equals("-")
+                    ? "No hay suficiente stock disponible en talla " + tallaReal + " para " + prod.Get_Nombre() + " (Disponibles: " + stockDisponible + ")."
+                    : "No hay suficiente stock disponible para " + prod.Get_Nombre() + ".";
+                JOptionPane.showMessageDialog(Panel_De_Ventas.this, msg, "Sin Stock", JOptionPane.WARNING_MESSAGE);
             }
             return false;
         }
 
         if (!found) {
-            tableModel.addRow(new Object[] { prod.Get_Id(), 1, prod.Get_Nombre(), prod.Get_Precio(), "" });
+            tableModel.addRow(new Object[] { prod.Get_Id(), 1, prod.Get_Nombre(), tallaReal, prod.Get_Precio(), "" });
         } else {
             int qty = actualEnCarrito + 1;
             tableModel.setValueAt(qty, rowIdx, 1);
-            tableModel.setValueAt(qty * prod.Get_Precio(), rowIdx, 3);
+            tableModel.setValueAt(qty * prod.Get_Precio(), rowIdx, 4);
         }
         updateTotals();
         return true;
@@ -963,13 +1046,69 @@ public class Panel_De_Ventas extends JPanel {
         
         for (Producto prod : productos) {
             gridPanel.add(new ProductCard(prod, () -> {
-                Agregar_Producto_Al_Carrito(prod, true);
+                seleccionarTallaYAgregar(prod);
             }));
         }
         
         SwingUtilities.invokeLater(() -> {
             recalcularAlturaGrid();
         });
+    }
+
+    private void seleccionarTallaYAgregar(Producto prod) {
+        if (prod.Get_Stock() <= 0 || "Agotado".equalsIgnoreCase(prod.Get_Estado())) {
+            JOptionPane.showMessageDialog(this, "El producto '" + prod.Get_Nombre() + "' se encuentra agotado.", "Sin Stock", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Map<String, Integer> map = prod.Get_Mapa_Stock_Tallas();
+        List<String> tallasDisponibles = new ArrayList<>();
+        if (map != null && !map.isEmpty()) {
+            for (Map.Entry<String, Integer> entry : map.entrySet()) {
+                if (entry.getValue() > 0) {
+                    tallasDisponibles.add(entry.getKey());
+                }
+            }
+        }
+
+        // Si no tiene desglose de tallas
+        if (tallasDisponibles.isEmpty()) {
+            Agregar_Producto_Al_Carrito(prod, "-", true);
+            return;
+        }
+
+        // Si solo hay una talla con stock
+        if (tallasDisponibles.size() == 1) {
+            Agregar_Producto_Al_Carrito(prod, tallasDisponibles.get(0), true);
+            return;
+        }
+
+        // Si hay un filtro de talla activo y ese producto tiene stock en esa talla
+        if (filtroTalla != null && prod.Get_Stock_De_Talla(filtroTalla) > 0) {
+            Agregar_Producto_Al_Carrito(prod, filtroTalla, true);
+            return;
+        }
+
+        // Diálogo para que el usuario elija la talla
+        String[] opciones = new String[tallasDisponibles.size()];
+        for (int i = 0; i < tallasDisponibles.size(); i++) {
+            String t = tallasDisponibles.get(i);
+            opciones[i] = "Talla " + t + " (" + map.get(t) + " pares disp.)";
+        }
+
+        String seleccion = (String) JOptionPane.showInputDialog(
+                SwingUtilities.getWindowAncestor(this),
+                "Seleccione la talla para '" + prod.Get_Nombre() + "':",
+                "Seleccionar Talla de Calzado",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
+
+        if (seleccion != null && !seleccion.isBlank()) {
+            String tallaSeleccionada = seleccion.replace("Talla", "").trim().split(" ")[0].trim();
+            Agregar_Producto_Al_Carrito(prod, tallaSeleccionada, true);
+        }
     }
 
     private void recalcularAlturaGrid() {
@@ -1029,7 +1168,7 @@ public class Panel_De_Ventas extends JPanel {
 
             double total = 0;
             for (int i = 0; i < tableModel.getRowCount(); i++) {
-                total += (double) tableModel.getValueAt(i, 3);
+                total += (double) tableModel.getValueAt(i, 4);
             }
             total = total * 1.18; // Incluyendo IGV
 
@@ -1042,10 +1181,11 @@ public class Panel_De_Ventas extends JPanel {
                 int idProd = (int) tableModel.getValueAt(i, 0);
                 int cant = (int) tableModel.getValueAt(i, 1);
                 String nombre = (String) tableModel.getValueAt(i, 2);
-                double subTot = (double) tableModel.getValueAt(i, 3);
+                String talla = String.valueOf(tableModel.getValueAt(i, 3));
+                double subTot = (double) tableModel.getValueAt(i, 4);
                 double pUnit = subTot / cant;
 
-                venta.Get_Detalles().add(new Detalle_De_Venta(idProd, nombre, cant, pUnit, subTot));
+                venta.Get_Detalles().add(new Detalle_De_Venta(idProd, nombre, cant, pUnit, subTot, talla));
             }
 
             // Obtener el Frame superior para centrar diálogos modales

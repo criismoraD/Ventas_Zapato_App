@@ -66,17 +66,17 @@ public class Panel_De_Chatbot extends JPanel {
                 SwingUtilities.invokeLater(() -> frameRef.Cambiar_Pestana(modulo));
             }
         });
-        geminiService.setOnAddCart((producto, cantidad) -> {
+        geminiService.setOnAddCart((producto, cantidad, talla) -> {
             if (frameRef != null) {
                 final String[] res = new String[1];
                 try {
                     if (SwingUtilities.isEventDispatchThread()) {
-                        res[0] = frameRef.Agregar_Producto_Al_Carrito(producto, cantidad);
+                        res[0] = frameRef.Agregar_Producto_Al_Carrito(producto, cantidad, talla);
                     } else {
-                        SwingUtilities.invokeAndWait(() -> res[0] = frameRef.Agregar_Producto_Al_Carrito(producto, cantidad));
+                        SwingUtilities.invokeAndWait(() -> res[0] = frameRef.Agregar_Producto_Al_Carrito(producto, cantidad, talla));
                     }
                 } catch (Exception e) {
-                    res[0] = frameRef.Agregar_Producto_Al_Carrito(producto, cantidad);
+                    res[0] = frameRef.Agregar_Producto_Al_Carrito(producto, cantidad, talla);
                 }
                 return res[0];
             }
@@ -826,7 +826,9 @@ public class Panel_De_Chatbot extends JPanel {
         scrollToBottom();
 
         if (cartProduct != null && frameRef != null) {
-            String result = frameRef.Agregar_Producto_Al_Carrito(cartProduct, extractQuantity(txt));
+            String talla = extractTalla(txt);
+            int cant = extractQuantity(txt, talla);
+            String result = frameRef.Agregar_Producto_Al_Carrito(cartProduct, cant, talla);
             // Si el producto fue encontrado y agregado exitosamente (el mensaje de error nativo no se gatilló)
             if (result != null && !result.startsWith("No encontré un producto parecido a:")) {
                 messages.add(new ChatMsg(true, result, ""));
@@ -1128,7 +1130,7 @@ public class Panel_De_Chatbot extends JPanel {
         }
 
         String product = t.replaceAll("\\b(agrega|agregar|anade|añade|pon|mete|coloca|incluye|agregalo|anadelo|agregala|anadela)\\b", " ")
-                .replaceAll("\\b(al|a la|a el|el|la|los|las|un|una|carrito|lista de compras|venta|por favor|si|ok|de)\\b", " ")
+                .replaceAll("\\b(al|a la|a el|el|la|los|las|un|una|carrito|lista de compras|venta|por favor|si|ok|de|pares?|unidades?|talla|tallas|numero|nro|num)\\b", " ")
                 .replaceAll("\\b\\d+\\b", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
@@ -1143,8 +1145,26 @@ public class Panel_De_Chatbot extends JPanel {
         return product.isEmpty() ? null : product;
     }
 
-    private int extractQuantity(String text) {
+    private String extractTalla(String text) {
+        if (text == null) return null;
         String t = normalizeUserText(text);
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)(?:talla|numero|nro|num|t\\.?|en|de)\\s*(\\d{2})\\b").matcher(t);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
+    }
+
+    private int extractQuantity(String text) {
+        return extractQuantity(text, null);
+    }
+
+    private int extractQuantity(String text, String detectedTalla) {
+        if (text == null) return 1;
+        String t = normalizeUserText(text);
+        if (detectedTalla != null) {
+            t = t.replaceAll("(?i)(?:talla|numero|nro|num|t\\.?|en|de)?\\s*" + java.util.regex.Pattern.quote(detectedTalla) + "\\b", " ");
+        }
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\b(\\d+)\\b").matcher(t);
         if (matcher.find()) {
             try { return Math.max(1, Integer.parseInt(matcher.group(1))); } catch (NumberFormatException e) { return 1; }
