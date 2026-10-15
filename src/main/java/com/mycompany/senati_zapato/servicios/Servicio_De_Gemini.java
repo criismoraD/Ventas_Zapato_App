@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -247,24 +248,13 @@ public class Servicio_De_Gemini {
         "Si el usuario te pide añadir, poner o agregar un producto al carrito, usa obligatoriamente la herramienta agregar_carrito.\n" +
         "Si te envían una imagen o captura, úsala como referencia visual temporal para responder.\n" +
         "Categorías válidas: Mocasines, Botas, Zapatillas, Sandalias, Deportivos, Urbanos, Elegantes.\n" +
-        "Cada producto cuenta con stock detallado por talla (ejemplo: Talla 44: 20 pares, Talla 42: 8 pares). " +
-        "Cuando el usuario consulte por la disponibilidad o cantidad de una talla en específico (ejemplo: '¿tienes en talla 44?', '¿cuántos pares quedan en 44?'), " +
-        "revisa el stock de esa talla exacta y responde con precisión (ejemplo: 'Sí, nos quedan 20 pares en talla 44'). " +
-        "Si la talla solicitada no tiene stock o no existe, indícalo claramente y menciona qué otras tallas sí tienen stock disponible.\n" +
-        "Responde en español con máximo 2 frases cortas. " +
-        "Para saludos, confirmaciones, explicaciones breves y preguntas generales que no dependan de datos actuales, responde directamente sin usar herramientas. " +
-        "Tienes memoria de la conversación: usa el contexto de los mensajes anteriores para " +
-        "entender follow-ups como 'verifícalo', '¿y en negro?' o 'cuántos de esos?'. " +
-        "Si el usuario da una orden corta y ambigua, interpreta que se refiere a lo último que " +
-        "hablaron y responde con la información que pides, en vez de preguntar de nuevo qué verificar. " +
-        "No uses Markdown, no uses asteriscos, no uses negritas y no hagas listas largas. " +
-        "Si el usuario pide ir, cambiar o navegar a Ventas, Inventario, Reportes o Inicio, usa obligatoriamente la herramienta navegar_modulo y responde confirmando. " +
-        "Si el usuario pregunta por colores, por precios, por los mas baratos o caros, por una talla o por que productos hay de cierta categoria, " +
-        "usa obligatoriamente la herramienta mostrar_en_ventas con el texto literal de su consulta: eso abre el modulo Ventas y deja el catalogo ya filtrado, " +
-        "y tu debes responder con el resultado que te devuelva, mencionando nombres y precios concretos. " +
-        "Cuando el usuario pida o mencione una categoria (mocasines, botas, zapatos casuales, zapatos de vestir, zapatos elegantes o todo el catalogo), " +
-        "usa tambien mostrar_en_ventas: normaliza el termino al nombre exacto de categoria - Botas, Mocasines, Zapatos de vestir, Zapatos casuales - " +
-        "y cuando quiera verlo todo escribe 'ver todo el catalogo'; luego responde con lo que te devuelva la herramienta. " +
+        "REGLA DE ORO PARA CONSULTAS DE TALLAS, STOCK Y PRODUCTOS:\n" +
+        "1. SI EL USUARIO CONSULTA POR UN PRODUCTO EN CONCRETO (ejemplos: 'cuantas tallas del zapato marron elegante tengo', 'que tallas tiene el zapato elegante marrón', 'cuanto stock queda del mocasin', 'tienes en talla 44 el oxford negro', 'precio del zapato de vestir azul'):\n" +
+        "   - DEBES LLAMAR OBLIGATORIAMENTE a la herramienta 'verificar_stock' pasando el nombre aproximado o código del producto (ejemplo: producto='zapato elegante marron').\n" +
+        "   - ESTÁ TOTALMENTE PROHIBIDO usar 'mostrar_en_ventas' cuando pregunten por el stock, las tallas o el precio de un zapato en particular. 'mostrar_en_ventas' es únicamente para explorar la tienda en general.\n" +
+        "   - Responde directamente con la información detallada que devuelve 'verificar_stock', indicando las tallas disponibles y la cantidad de pares en cada una (ejemplo: 'El Zapato Elegante Marrón tiene disponibles las tallas 39, 40 y 41, con un total de 23 pares').\n\n" +
+        "2. SI EL USUARIO PIDE EXPLORAR O FILTRAR EL CATÁLOGO GENERAL:\n" +
+        "   - Solo si pide ver una lista abierta (ejemplos: 'muéstrame zapatos marrones', 'abre la categoría botas', 'zapatos de menos de 150 soles', 'enséñame los más baratos', 'ver todo el catálogo', 'muéstrame todos los zapatos que tengan talla 44'), usa 'mostrar_en_ventas' con el texto del filtro y responde con los productos devueltos.\n" +
         "Los filtros de mostrar_en_ventas se ACUMULAN entre turnos: si el usuario pide 'zapatos talla 44' y luego 'en negros', ambos filtros se mantienen. " +
         "Por eso, cuando la consulta solo anade un detalle, manda SOLO lo nuevo ('en negros') y la herramienta conserva lo anterior. " +
         "En tu respuesta menciona siempre el filtro completo que devuelve la herramienta, no solo la ultima palabra del usuario. " +
@@ -350,11 +340,11 @@ public class Servicio_De_Gemini {
         toolList.add(Tool.builder()
                 .functionDeclarations(FunctionDeclaration.builder()
                         .name("verificar_stock")
-                        .description("Verifica el stock y precio de un producto específico por su código o nombre")
+                        .description("Consulta el stock total, precio y desglose de tallas disponibles con sus cantidades de un modelo o producto específico de zapato (ej: 'zapato elegante marrón', 'oxford negro', 'mocasines', 'zapatillas run x'). Úsala SIEMPRE que pregunten cuántas tallas, qué tallas hay o cuánto stock queda de un zapato en particular.")
                         .parameters(Schema.builder()
                                 .type(new Type(Type.Known.OBJECT))
                                 .properties(Map.of(
-                                        "producto", Schema.builder().type(new Type(Type.Known.STRING)).description("Nombre o código del producto").build()
+                                        "producto", Schema.builder().type(new Type(Type.Known.STRING)).description("Nombre aproximado, modelo o código del producto (ej: 'zapato elegante marron', 'oxford negro', 'P001')").build()
                                 ))
                                 .required(List.of("producto"))
                                 .build())
@@ -541,11 +531,11 @@ public class Servicio_De_Gemini {
         toolList.add(Tool.builder()
                 .functionDeclarations(FunctionDeclaration.builder()
                         .name("mostrar_en_ventas")
-                        .description("Abre el modulo Ventas y deja el catalogo filtrado por lo que pidio el usuario: color, precio (maximo o minimo), talla o categoria. Usala SIEMPRE que pregunten que hay de un color, que precio tienen, cuales son mas baratos o mas caros, o que productos hay de una talla")
+                        .description("Abre el módulo Ventas y filtra visualmente el catálogo general por categoría amplia (botas, zapatillas, elegantes), rango de precio o color general. PROHIBIDO usar si la pregunta es sobre las tallas, stock o precio de un zapato o modelo en concreto; para preguntas sobre un modelo específico usa siempre verificar_stock.")
                         .parameters(Schema.builder()
                                 .type(new Type(Type.Known.OBJECT))
                                 .properties(Map.of(
-                                        "consulta", Schema.builder().type(new Type(Type.Known.STRING)).description("Texto literal del usuario con el filtro, por ejemplo: zapatos negros, menos de 150 soles, el mas barato, talla 42, mocasins marrones").build()
+                                        "consulta", Schema.builder().type(new Type(Type.Known.STRING)).description("Texto del filtro amplio del catálogo, ej: 'zapatos negros', 'menos de 150 soles', 'categoría botas'").build()
                                 ))
                                 .required(List.of("consulta"))
                                 .build())
@@ -641,32 +631,38 @@ public class Servicio_De_Gemini {
                     return "Se encontraron 1 producto(s):\n"
                         + "- " + exacto.Get_Nombre()
                         + " | Código: " + exacto.Get_Codigo()
+                        + " | Categoría: " + exacto.Get_Categoria()
                         + " | Stock: " + exacto.Get_Stock()
+                        + " | Tallas: " + exacto.Get_Resumen_Tallas_Con_Stock()
                         + " | Precio: S/ " + String.format("%.2f", exacto.Get_Precio())
                         + " | Estado: " + exacto.Get_Estado() + "\n";
                 }
 
-                // 3. Si no hay coincidencia exacta, recorrer el BST en INORDER
-                //    para obtener todos los productos ordenados y filtrar por nombre/categoría
+                // 3. Si no hay coincidencia exacta por código, recorrer el BST en INORDER
+                //    para obtener todos los productos ordenados y buscar por similitud y palabras clave
                 List<Producto> ordenados = new ArrayList<>();
                 bst.inorder(bst.getRaiz(), ordenados); // recorrido transversal inorder
 
-                List<Producto> encontrados = new ArrayList<>();
-                String q = query.toLowerCase();
+                String qNorm = Normalizar_Texto_Busqueda(query);
+                List<Map.Entry<Producto, Integer>> scored = new ArrayList<>();
                 for (Producto p : ordenados) {
-                    if (p.Get_Nombre().toLowerCase().contains(q)
-                            || (p.Get_Codigo() != null && p.Get_Codigo().toLowerCase().contains(q))
-                            || (p.Get_Categoria() != null && p.Get_Categoria().toLowerCase().contains(q))) {
-                        encontrados.add(p);
+                    int score = CalcularScoreCoincidencia(p, query, qNorm);
+                    if (score >= 20) {
+                        scored.add(Map.entry(p, score));
                     }
                 }
-                if (encontrados.isEmpty()) return "No se encontraron productos con: " + query;
+                scored.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+
+                if (scored.isEmpty()) return "No se encontraron productos con: " + query;
                 StringBuilder sb = new StringBuilder();
-                sb.append("Se encontraron ").append(encontrados.size()).append(" producto(s):\n");
-                for (Producto p : encontrados) {
+                sb.append("Se encontraron ").append(scored.size()).append(" producto(s):\n");
+                for (Map.Entry<Producto, Integer> entry : scored) {
+                    Producto p = entry.getKey();
                     sb.append("- ").append(p.Get_Nombre())
                       .append(" | Código: ").append(p.Get_Codigo())
+                      .append(" | Categoría: ").append(p.Get_Categoria())
                       .append(" | Stock: ").append(p.Get_Stock())
+                      .append(" | Tallas: ").append(p.Get_Resumen_Tallas_Con_Stock())
                       .append(" | Precio: S/ ").append(String.format("%.2f", p.Get_Precio()))
                       .append(" | Estado: ").append(p.Get_Estado()).append("\n");
                 }
@@ -674,7 +670,7 @@ public class Servicio_De_Gemini {
             }
             case "verificar_stock": {
                 String prod = (String) args.get("producto");
-                if (prod == null) return "Error: falta el parámetro producto";
+                if (prod == null || prod.isBlank()) return "Indica el nombre o código del producto.";
                 List<Producto> todos = productoDAO.Obtener_Todos();
 
                 // --- ÁRBOL BINARIO DE BÚSQUEDA ---
@@ -684,22 +680,33 @@ public class Servicio_De_Gemini {
 
                 Producto encontrado = bst.buscarPorCodigo(prod);
 
-                // Si no hay coincidencia exacta por código, recorrer inorder y buscar por nombre
+                // Si no hay coincidencia exacta por código, recorrer inorder y buscar con matching flexible
                 if (encontrado == null) {
                     List<Producto> ordenados = new ArrayList<>();
                     bst.inorder(bst.getRaiz(), ordenados);
-                    String q = prod.toLowerCase();
-                    for (Producto p : ordenados) {
-                        if (p.Get_Nombre().toLowerCase().contains(q)) {
-                            encontrado = p;
-                            break;
-                        }
-                    }
+                    encontrado = Buscar_Producto_Flexible(ordenados, prod);
                 }
 
-                if (encontrado == null) return "No se encontró el producto: " + prod;
+                if (encontrado == null) {
+                    StringBuilder err = new StringBuilder();
+                    err.append("No se encontró ningún producto que coincida con: \"").append(prod).append("\".\n");
+                    if (!todos.isEmpty()) {
+                        err.append("Productos disponibles en inventario:\n");
+                        int count = 0;
+                        for (Producto p : todos) {
+                            if (p.Get_Stock() > 0) {
+                                err.append("- ").append(p.Get_Nombre()).append(" (Código: ").append(p.Get_Codigo())
+                                   .append(", Stock: ").append(p.Get_Stock()).append(")\n");
+                                if (++count >= 5) break;
+                            }
+                        }
+                    }
+                    return err.toString();
+                }
+
                 return "Producto: " + encontrado.Get_Nombre() + "\n"
                         + "Código: " + encontrado.Get_Codigo() + "\n"
+                        + "Categoría: " + encontrado.Get_Categoria() + "\n"
                         + "Stock Total: " + encontrado.Get_Stock() + " pares\n"
                         + "Precio: S/ " + String.format("%.2f", encontrado.Get_Precio()) + "\n"
                         + "Stock por Tallas: " + encontrado.Get_Resumen_Tallas_Con_Stock() + "\n"
@@ -926,6 +933,86 @@ public class Servicio_De_Gemini {
             try { return Integer.parseInt((String) value); } catch (NumberFormatException e) { return fallback; }
         }
         return fallback;
+    }
+
+    public static Producto Buscar_Producto_Flexible(List<Producto> productos, String busqueda) {
+        if (busqueda == null || busqueda.trim().isEmpty() || productos == null || productos.isEmpty()) {
+            return null;
+        }
+        String q = Normalizar_Texto_Busqueda(busqueda);
+        Producto mejor = null;
+        int mejorScore = 0;
+        for (Producto p : productos) {
+            int score = CalcularScoreCoincidencia(p, busqueda, q);
+            if (score > mejorScore) {
+                mejorScore = score;
+                mejor = p;
+            }
+        }
+        return mejorScore >= 20 ? mejor : null;
+    }
+
+    private static int CalcularScoreCoincidencia(Producto p, String busquedaOriginal, String qNorm) {
+        if (p == null) return 0;
+        String nombreNorm = Normalizar_Texto_Busqueda(p.Get_Nombre());
+        String codigoNorm = Normalizar_Texto_Busqueda(p.Get_Codigo());
+        String catNorm = Normalizar_Texto_Busqueda(p.Get_Categoria());
+
+        if (codigoNorm.equalsIgnoreCase(qNorm) || (p.Get_Codigo() != null && p.Get_Codigo().equalsIgnoreCase(busquedaOriginal.trim()))) {
+            return 1000;
+        }
+        if (nombreNorm.equalsIgnoreCase(qNorm)) {
+            return 500;
+        }
+
+        int score = 0;
+        if (nombreNorm.contains(qNorm) || qNorm.contains(nombreNorm)) {
+            score += 150;
+        }
+        if (codigoNorm.contains(qNorm)) {
+            score += 100;
+        }
+        if (catNorm.contains(qNorm)) {
+            score += 40;
+        }
+
+        // Evaluación de tokens individuales (ej: "marron", "elegante")
+        String[] tokens = qNorm.split("\\s+");
+        int tokensSignificativos = 0;
+        int tokensEncontradosEnNombre = 0;
+        for (String t : tokens) {
+            if (t.length() < 2) continue;
+            tokensSignificativos++;
+            if (nombreNorm.contains(t)) {
+                score += 50;
+                tokensEncontradosEnNombre++;
+            }
+            if (catNorm.contains(t)) {
+                score += 20;
+            }
+            if (codigoNorm.contains(t)) {
+                score += 30;
+            }
+        }
+
+        if (tokensSignificativos > 1 && tokensEncontradosEnNombre == tokensSignificativos) {
+            score += 200;
+        }
+
+        return score;
+    }
+
+    private static String Normalizar_Texto_Busqueda(String text) {
+        if (text == null) return "";
+        String base = Normalizer.normalize(text.toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        String sinStopWords = base.replaceAll("\\b(el|la|los|las|un|una|unos|unas|de|del|en|con|para|por|zapato|zapatos|calzado|par|pares|tengo|talla|tallas|stock|cuanto|cuantos|cuanta|cuantas|hay|precio|precios)\\b", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return sinStopWords.isEmpty() ? base : sinStopWords;
     }
 
     private String buildDatabaseSummary() {
