@@ -980,19 +980,38 @@ public class Panel_De_Chatbot extends JPanel {
     }
 
     /**
-     * Detecta si el usuario pide ver una categoria de zapatos (mocasines, botas,
-     * casuales, vestir o todo el catalogo). Devuelve el termino que debe aplicar
-     * el filtro de Ventas, o null si no es una peticion de categoria.
+     * Detecta si el usuario pide explícitamente ver o filtrar una categoría de zapatos en el catálogo
+     * (mocasines, botas, casuales, vestir o todo el catálogo).
+     * Devuelve el término para el filtro de Ventas, o null si es una consulta para Gemini.
      */
     private String detectarCategoriaDeZapatos(String txt) {
         if (txt == null || txt.trim().isEmpty()) return null;
         String t = normalizeUserText(txt);
         // Tolerancia a typos con letras repetidas: "cassuales" -> "casuales", "mocassines" -> "mocasines".
         String plano = t.replaceAll("(.)\\1+", "$1");
-        // Órdenes de carrito o de compra: las deja pasar al flujo normal (Gemini / agregar_carrito).
+
+        // Consultas de stock, tallas, precios, conteo o disponibilidad:
+        // NUNCA interceptar localmente, deben enviarse a Gemini para que use 'verificar_stock'.
+        if (plano.matches(".*\\b(cuanto|cuantos|cuanta|cuantas|talla|tallas|stock|precio|precios|costo|costos|queda|quedan|hay|tengo|tienen|existe|disponible|disponibilidad|que|cual|cuales|info|informacion|detalle)\\b.*")) {
+            return null;
+        }
+
+        // Si menciona colores específicos o modelos concretos, se refiere a un producto específico y debe ir a Gemini
+        if (plano.matches(".*\\b(negro|negra|negros|negras|marron|marrones|cafe|cafes|azul|azules|blanco|blanca|blancos|blancas|rojo|roja|rojos|rojas|verde|verdes|gris|grises|beige|vino|dorado|plateado|oxford|monk|derby|botin)\\b.*")) {
+            return null;
+        }
+
+        // Órdenes de carrito o de compra: dejar pasar al flujo normal (Gemini / agregar_carrito).
         if (plano.matches(".*\\b(agrega|agregar|agrego|anade|anadir|anado|pon|poner|mete|meter|quita|quitar|elimina|eliminar|compra|comprar)\\b.*")) {
             return null;
         }
+
+        // Solo activar si pide explícitamente ver, mostrar, abrir o filtrar una categoría general
+        boolean pideVerCategoria = plano.matches(".*\\b(ver|muestra|muestrame|ensename|abre|abrir|ir a|categoria|seccion|catalogo|filtrar|filtra)\\b.*");
+        if (!pideVerCategoria) {
+            return null;
+        }
+
         boolean mencionaCalzado = plano.matches(".*\\b(zapato|zapatos|zapatilla|zapatillas|calzado|catalogo|categoria)\\b.*");
         if (plano.contains("mocasin")) return "mocasines";
         if (plano.matches(".*\\bbot(as|os)\\b.*")) return "botas";
@@ -1004,11 +1023,17 @@ public class Panel_De_Chatbot extends JPanel {
 
     private String detectNavigationTarget(String text) {
         String t = normalizeUserText(text);
-        boolean asksNavigation = t.matches(".*\\b(donde|modulo|ir|lleva|llevar|redirige|redirigir|gestionar|abrir|abre|entra|entrar|vamos|vamonos|voy|anda|dirige|dirigeme|hacer|registrar|ahora a|ve a|cambia a|pasa a|muestrame)\\b.*")
+
+        // Si es una pregunta de stock, tallas, precios o conteo, no es una orden de navegación
+        if (t.matches(".*\\b(cuanto|cuantos|cuanta|cuantas|talla|tallas|stock|precio|precios|costo|costos|queda|quedan|hay|tengo|tienen|existe|disponible|disponibilidad)\\b.*")) {
+            return null;
+        }
+
+        boolean asksNavigation = t.matches(".*\\b(donde|modulo|ir|lleva|llevar|redirige|redirigir|gestionar|abrir|abre|entra|entrar|vamos|vamonos|voy|anda|dirige|dirigeme|hacer|registrar|ahora a|ve a|cambia a|pasa a)\\b.*")
                 || t.startsWith("a ") || t.startsWith("al ");
         if (!asksNavigation) return null;
 
-        if (t.matches(".*\\b(inventario|gestor|producto|productos|stock|zapato)\\b.*")) {
+        if (t.matches(".*\\b(inventario|gestor)\\b.*")) {
             return "Gestor";
         }
         if (t.matches(".*\\b(venta|vender|cobrar|facturar|boleta|comprobante)\\b.*")) {
